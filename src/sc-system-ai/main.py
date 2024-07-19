@@ -16,4 +16,4 @@ prompt = ChatPromptTemplate.from_messages([
 # "|" は処理の順番を示す 
 chain = prompt | llm | StrOutputParser()
 
-print(chain.invoke({"sentences_before_check": "こんんんちわ、真純です。"}))
+print(chain.invoke({"sentences_before_check": "こんんんちわ、これはテテストトです。"}))
