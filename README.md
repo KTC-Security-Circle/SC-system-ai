@@ -6,11 +6,17 @@
 
 1. 自身の環境にcloneする
 
-    ```bash
-    git clone git@github.com:KTC-Security-Circle/SC-system-ai.git
-    ```
+    - GitHubデスクトップを使用する場合
 
-    もし権限がないなどのエラーが発生した場合、ssh鍵を登録する必要があるため、次のサイトを参考に登録を行う | [参考サイト](https://qiita.com/shizuma/items/2b2f873a0034839e47ce)
+        [公式ドキュメント](https://docs.github.com/ja/desktop/adding-and-cloning-repositories/cloning-a-repository-from-github-to-github-desktop)を参考にしてcloneしてください
+
+    - Git コマンドを使用する場合
+
+        ```bash
+        git clone git@github.com:KTC-Security-Circle/SC-system-ai.git
+        ```
+
+        もし権限がないなどのエラーが発生した場合、ssh鍵を登録する必要があるため、次のサイトを参考に登録を行う | [参考サイト](https://qiita.com/shizuma/items/2b2f873a0034839e47ce)
 
 2. Pythonの仮想環境を構築する
     
