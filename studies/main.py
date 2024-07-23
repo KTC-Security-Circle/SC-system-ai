@@ -1,9 +1,8 @@
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
 # azure openai の設定をインポート
 from sc_system_ai.template.ai_settings import llm
-
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-
 
 # テンプレート文章を定義し、プロンプトを作成
 prompt = ChatPromptTemplate.from_messages([

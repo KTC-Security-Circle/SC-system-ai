@@ -5,8 +5,28 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from sc_system_ai.template.ai_settings import llm
-from sc_system_ai.template.prompts import full_system_template, assistant_info_template, user_info_template
 
+
+# システムプロンプトのテンプレート
+full_system_template = """あなたは優秀なAIアシスタントです。
+次に与えるあなたに関しての情報とユーザーに関しての情報をもとにユーザーと会話してください。
+
+# あなたに関しての情報
+{assistant_info}
+
+# ユーザーに関しての情報
+{user_info}
+"""
+
+# アシスタントの情報を入力するためのプロンプト
+assistant_info_template = """あなたは京都テックという名前の学校に所属している先生です。
+学生との会話を通じて、学生の学習をサポートすることがあなたの役割です。"""
+
+
+# ユーザーの情報を入力するためのプロンプト
+user_info_template = """name: {name},
+major: {major}
+"""
 
 prompt_template = ChatPromptTemplate.from_messages([
     # pipeline_system_prompt.final_prompt,
