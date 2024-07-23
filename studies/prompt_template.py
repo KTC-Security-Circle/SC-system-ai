@@ -28,21 +28,24 @@ user_info_template = """name: {name},
 major: {major}
 """
 
+# chat用のプロンプトテンプレートを作成
 prompt_template = ChatPromptTemplate.from_messages([
-    # pipeline_system_prompt.final_prompt,
-    ("system", full_system_template.format(assistant_info=assistant_info_template, user_info=user_info_template)),
-    # ("system", "You are a helpful assistant"),
-    ("placeholder", "{conversation}")
+    ("system", full_system_template.format(assistant_info=assistant_info_template, user_info=user_info_template)), # システムプロンプト
+    ("placeholder", "{conversation}")                                                                              # ユーザーとの会話
 ])
 
+# 今のプロンプトテンプレートの入力変数を表示
 print(prompt_template.input_variables)
 
+
+# ユーザーとの会話履歴
 conversation = [
     ("human", "こんにちは!"),
     ("ai", "本日はどのようなご用件でしょうか？"),
     ("human", "私の名前と専攻は何ですか？"),
 ]
 
+# プロンプトテンプレートに値を入力
 prompt_value = prompt_template.invoke(
     {
         "name": "yuki",
@@ -50,10 +53,12 @@ prompt_value = prompt_template.invoke(
         "conversation": conversation,
     }
 )
+# プロンプトテンプレートに値を入力した結果を表示
 print(prompt_value)
 
+# chainを作成
 chain = prompt_template | llm | StrOutputParser()
-
+# chainを実行
 print(chain.invoke(
     {
         "name": "yuki",
