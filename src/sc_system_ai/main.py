@@ -3,11 +3,11 @@ from sc_system_ai.template.user_prompts import UserPrompt, User
 
 # ユーザー情報
 class Chat():
-    def __init__(self, user_name, user_major, conversation, user_args: User = None,):
+    def __init__(self, user_name, user_major, conversation, user_info: User = None,):
         self.user_name = user_name
         self.user_major = user_major
         self.conversation = conversation
-        self.user_args = user_args
+        self.user_info = user_info
 
 
     def __str__(self):
@@ -22,6 +22,8 @@ class Chat():
         user_prompt = user.create_user_prompt()
         return user_prompt
     
+
+
 
 
 if __name__ == "__main__":

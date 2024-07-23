@@ -5,10 +5,35 @@ class:
     - User(ユーザーの情報を保持するクラス)
     - UserInfoPrompt(ユーザー情報のプロンプトを生成するクラス)
 """
+from pydantic import BaseModel, Field
+from typing import Optional, List, Tuple
 from sc_system_ai.template.prompts import user_info_template
 
 
-class User():
+class Conversation(BaseModel):
+    role: str = Field(description="発言者の役割 (human または ai)")
+    content: str = Field(description="発言内容")
+
+class ConversationHistory(BaseModel):
+    conversations: List[Conversation] = Field(default_factory=list, description="会話履歴のリスト")
+
+    def get_conversations(self) -> List[Tuple[str, str]]:
+        """
+        会話履歴を取得する。
+        """
+        return [(conversation.role, conversation.content) for conversation in self.conversations]
+
+    def add_conversation(self, role: str, content: str):
+        """
+        会話履歴に新しい発言を追加する。
+        """
+        new_conversation = Conversation(role=role, content=content)
+        self.conversations.append(new_conversation)
+
+
+
+
+class User(BaseModel):
     """
     ### User class
     ユーザーの情報を保持するクラス
@@ -16,29 +41,26 @@ class User():
     Args:
         name (str): ユーザーの名前
         major (str): ユーザーの専攻
+        conversations (ConversationHistory): 会話履歴
     
     Returns:
         str: 現在のユーザー情報
     """
-    def __init__(
-            self, 
-            name: str = 'None', 
-            major: str = 'None',
-        ):
-        self.name = name
-        self.major = major
+    name: str = Field(default='None', description="ユーザーの名前")
+    major: str = Field(default='None', description="ユーザーの専攻")
+    conversations: ConversationHistory = Field(default_factory=ConversationHistory, description="会話履歴")
 
     def __str__(self) -> str:
-        return f"name: {self.name}, major: {self.major},"
+        return f"name: {self.name}, major: {self.major}, conversation: {self.conversations.get_conversations()}"
 
-    def update_user(self, name: str, major: str) -> 'User':
-        self.name = name
-        self.major = major
+    def update_user(self, **kwags) -> 'User':
+        for key, value in kwags.items():
+            setattr(self, key, value)
         return self
 
 
 
-class UserInfoPrompt():
+class UserInfoPrompt:
     """
     ### UserInfoPrompt class
     ユーザー情報のプロンプトを生成するクラス
@@ -49,7 +71,7 @@ class UserInfoPrompt():
     Returns:
         str: ユーザー情報のプロンプト
     """
-    def __init__(self, user_info: User = None):
+    def __init__(self, user_info: Optional[User] = None):
         self.user_info = user_info
         if user_info is not None:
             self.user_prompt = self._format()
@@ -84,8 +106,11 @@ class UserInfoPrompt():
 
 
 if __name__ == "__main__":
-    user = User("yuki", "スーパーAIクリエイター専攻")
+    user = User(name="yuki", major="スーパーAIクリエイター専攻")
     print(user)
+    user.update_user(name="update")
     user_prompt = UserInfoPrompt(user)
     # user_prompt.format(user)
     print(user_prompt)
+    user.conversations.add_conversation("human", "こんにちは!")
+    print(user.conversations)
