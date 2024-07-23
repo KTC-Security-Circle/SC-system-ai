@@ -21,3 +21,17 @@ class Chat():
         user = UserPrompt(self.user_name, self.user_major)
         user_prompt = user.create_user_prompt()
         return user_prompt
+    
+
+
+if __name__ == "__main__":
+    # ユーザー情報
+    user_name = "yuki"
+    user_major = "スーパーAIクリエイター専攻"
+    conversation = [
+        ("human", "こんにちは!"),
+        ("ai", "本日はどのようなご用件でしょうか？"),
+        ("human", "私の名前と専攻は何ですか？"),
+    ]
+    user = User(user_name, user_major)
+    chat = Chat(user_name, user_major, conversation, user)
