@@ -37,6 +37,11 @@ class UserPrompt():
         self.user_args = user_args
         self.user_prompt = self._format()
 
+    def create_user_prompt(self, user_name: str, user_major: str):
+        self.user_args = User(user_name, user_major)
+        self.user_prompt = self._format()
+        return self.user_prompt
+
 
 
 
