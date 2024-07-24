@@ -19,16 +19,39 @@ class ConversationHistory(BaseModel):
 
     def get_conversations(self) -> List[Tuple[str, str]]:
         """
-        会話履歴を取得する。
+        会話履歴を取得する関数
         """
         return [(conversation.role, conversation.content) for conversation in self.conversations]
 
     def add_conversation(self, role: str, content: str):
         """
-        会話履歴に新しい発言を追加する。
+        会話履歴に新しい発言を追加する関数
+
+        例：
+        ```python
+        user = User(name="test user", major="テスト専攻")
+        user.conversations.add_conversation("human", "こんにちは!")
+        ```
         """
         new_conversation = Conversation(role=role, content=content)
         self.conversations.append(new_conversation)
+    
+    def add_conversations_list(self, conversations: List[Tuple[str, str]]):
+        """
+        会話履歴にリスト形式の会話を追加する関数
+
+        例：
+        ```python
+        user = User(name="test user", major="テスト専攻")
+        conversations = [
+            ("human", "こんにちは!"),
+            ("ai", "本日はどのようなご用件でしょうか？")
+        ]
+        user.add_conversations_from_json(conversations)
+        ```
+        """
+        for role, content in conversations:
+            self.add_conversation(role, content)
 
 
 
@@ -76,13 +99,14 @@ class UserInfoPrompt:
         if user_info is not None:
             self.user_prompt = self._format()
 
+
     def __str__(self) -> str:
-        if self.user_info is not None:
+        if self.user_prompt is not None:
             return self.user_prompt
         else:
             return "No user args. Please format user args."
     
-    def _format(self):
+    def _format(self) -> str:
         return user_info_template.format(name=self.user_info.name, major=self.user_info.major)
 
     def format(self, user_info: User) -> str:
@@ -101,6 +125,9 @@ class UserInfoPrompt:
     
     def get_user_info(self) -> User:
         return self.user_info
+    
+    def get_user_prompt(self) -> str:
+        return self.user_prompt
 
 
 

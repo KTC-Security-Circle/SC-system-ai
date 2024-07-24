@@ -3,5 +3,7 @@ python-dotenv
 langchain
 langchain-community
 langchain-openai
+langsmith
+langgraph
 
 -e .
