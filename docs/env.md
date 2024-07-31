@@ -40,11 +40,7 @@
 
     load_dotenv()
 
-    azureOpenAIEndpoint = os.getenv('AZURE_OPENAI_ENDPOINT')
-    azureOpenAIKey = os.getenv('AZURE_OPENAI_API_KEY')
-    azureDeploymentName = os.getenv('AZURE_DEPLOYMENT_NAME')
-    azureEmbeddingsDeploymentName = os.getenv('AZURE_EMBEDDINGS_DEPLOYMENT_NAME')
-    openAIApiVersion = os.getenv('OPENAI_API_VERSION')
+    azureDeploymentName = os.environ['AZURE_DEPLOYMENT_NAME']
     ```
 
     必要なパッケージやライブラリをインストールして、特定のプログラミング言語やフレームワークで環境変数を使用できるようにしてください。Pythonでは、`python-dotenv`パッケージをインストールする必要があります。これは、以下のコマンドでインストールできます。
