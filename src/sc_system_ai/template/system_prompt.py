@@ -42,7 +42,7 @@ class PromptTemplate:
 
 
 if __name__ == "__main__":
-    user = User(name="yuki", major="スーパーAIクリエイター専攻")
+    user = User(name="hogehoge", major="fugafuga専攻")
     print(user)
     prompt = PromptTemplate(user_info=user)
     print(prompt.full_prompt)

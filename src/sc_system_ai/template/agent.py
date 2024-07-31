@@ -85,8 +85,8 @@ class Agent:
 
 if __name__ == "__main__":
     # ユーザー情報
-    user_name = "yuki"
-    user_major = "スーパーAIクリエイター専攻"
+    user_name = "hogehoge"
+    user_major = "fugafuga専攻"
     history = [
         ("human", "こんにちは!"),
         ("ai", "本日はどのようなご用件でしょうか？")

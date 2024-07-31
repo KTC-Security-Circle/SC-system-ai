@@ -48,8 +48,8 @@ conversation = [
 # プロンプトテンプレートに値を入力
 prompt_value = prompt_template.invoke(
     {
-        "name": "yuki",
-        "major": "スーパーAIクリエイター専攻",
+        "name": "hogehoge",
+        "major": "fugafuga専攻",
         "conversation": conversation,
     }
 )
@@ -61,8 +61,8 @@ chain = prompt_template | llm | StrOutputParser()
 # chainを実行
 print(chain.invoke(
     {
-        "name": "yuki",
-        "major": "スーパーAIクリエイター専攻",
+        "name": "hogehoge",
+        "major": "fugafuga専攻",
         "conversation": conversation,
     }
 ))

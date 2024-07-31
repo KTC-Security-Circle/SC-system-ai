@@ -147,7 +147,7 @@ class UserPromptTemplate:
 
 
 if __name__ == "__main__":
-    user = User(name="yuki", major="スーパーAIクリエイター専攻")
+    user = User(name="hogehoge", major="fugafuga専攻")
     print(user)
     user.update_user(name="update")
     user_prompt = UserPromptTemplate(user)
