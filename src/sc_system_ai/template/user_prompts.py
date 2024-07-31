@@ -7,6 +7,7 @@ class:
 """
 from pydantic import BaseModel, Field
 from typing import Optional, List, Tuple
+from langchain_core.messages import HumanMessage, AIMessage
 from sc_system_ai.template.prompts import user_info_template
 
 
@@ -16,7 +17,17 @@ class Conversation(BaseModel):
 
 class ConversationHistory(BaseModel):
     conversations: List[Conversation] = Field(default_factory=list, description="会話履歴のリスト")
-
+    def format_conversation(self) -> str:
+        """
+        会話履歴を整形して返す関数
+        """
+        chat_history = []
+        for conversation in self.conversations:
+            if conversation.role == "human":
+                chat_history.append(HumanMessage(conversation.content))
+            elif conversation.role == "ai":
+                chat_history.append(AIMessage(conversation.content))
+        return chat_history
     def get_conversations(self) -> List[Tuple[str, str]]:
         """
         会話履歴を取得する関数
@@ -39,6 +50,7 @@ class ConversationHistory(BaseModel):
     def add_conversations_list(self, conversations: List[Tuple[str, str]]):
         """
         会話履歴にリスト形式の会話を追加する関数
+        role: 発言者の役割 (human または ai)
 
         例：
         ```python
@@ -83,26 +95,26 @@ class User(BaseModel):
 
 
 
-class UserInfoPrompt:
+class UserPromptTemplate:
     """
     ### UserInfoPrompt class
-    ユーザー情報のプロンプトを生成するクラス
+    ユーザー情報のプロンプトテンプレートを生成するクラス
     
     Args:
         user_info (User): ユーザーの情報
     
     Returns:
-        str: ユーザー情報のプロンプト
+        str: ユーザー情報のプロンプトテンプレート
     """
     def __init__(self, user_info: Optional[User] = None):
         self.user_info = user_info
         if user_info is not None:
-            self.user_prompt = self._format()
+            self.user_prompt_template = self._format()
 
 
     def __str__(self) -> str:
-        if self.user_prompt is not None:
-            return self.user_prompt
+        if self.user_prompt_template is not None:
+            return self.user_prompt_template
         else:
             return "No user args. Please format user args."
     
@@ -111,23 +123,23 @@ class UserInfoPrompt:
 
     def format(self, user_info: User) -> str:
         self.user_info = user_info
-        self.user_prompt = self._format()
+        self.user_prompt_template = self._format()
 
-    def create_user_prompt(self, user_name: str, user_major: str) -> str:
+    def create_user_prompt_template(self, user_name: str, user_major: str) -> str:
         self.user_info = User(user_name, user_major)
-        self.user_prompt = self._format()
-        return self.user_prompt
+        self.user_prompt_template = self._format()
+        return self.user_prompt_template
     
-    def update_user_prompt(self, user_name: str, user_major: str) -> str:
+    def update_user_prompt_template(self, user_name: str, user_major: str) -> str:
         self.user_info.update_user(user_name, user_major)
-        self.user_prompt = self._format()
-        return self.user_prompt
+        self.user_prompt_template = self._format()
+        return self.user_prompt_template
     
     def get_user_info(self) -> User:
         return self.user_info
     
-    def get_user_prompt(self) -> str:
-        return self.user_prompt
+    def get_user_prompt_template(self) -> str:
+        return self.user_prompt_template
 
 
 
@@ -136,8 +148,9 @@ if __name__ == "__main__":
     user = User(name="yuki", major="スーパーAIクリエイター専攻")
     print(user)
     user.update_user(name="update")
-    user_prompt = UserInfoPrompt(user)
+    user_prompt = UserPromptTemplate(user)
     # user_prompt.format(user)
     print(user_prompt)
     user.conversations.add_conversation("human", "こんにちは!")
     print(user.conversations)
+    print(user.conversations.format_conversation())

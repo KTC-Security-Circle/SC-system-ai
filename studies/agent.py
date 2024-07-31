@@ -28,7 +28,7 @@ tools = [search]
 
 # プロンプトをlangchainhubから取得
 prompt = hub.pull("hwchase17/openai-functions-agent")
-print(prompt.messages)
+print(prompt)
 
 # エージェントのもとを作成
 agent = create_tool_calling_agent(llm, tools, prompt)
@@ -37,4 +37,4 @@ agent = create_tool_calling_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools)
 
 # エージェントを実行して表示
-print(agent_executor.invoke({"input": input_message}))
+# print(agent_executor.invoke({"input": input_message}))
