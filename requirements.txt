@@ -6,4 +6,5 @@ langchain-openai
 langsmith
 langgraph
 
+duckduckgo-search
 -e .

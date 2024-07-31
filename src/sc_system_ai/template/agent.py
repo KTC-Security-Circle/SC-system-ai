@@ -10,25 +10,56 @@ from sc_system_ai.template.user_prompts import UserPromptTemplate, User, Convers
 from sc_system_ai.template.system_prompt import PromptTemplate
 from sc_system_ai.agents.tools import magic_function, search_duckduckgo
 
+template_tools = [search_duckduckgo]
+
+agent_info = """
+エージェント情報:
+-------------------
+    assistant_info: {assistant_info}
+    user_info: {user_info}
+    tools: {tools}
+-------------------
+"""
 
 # Agentクラスの作成
 class Agent:
+    """
+    Agentクラス
+
+    Args:
+        assistant_info (str): エージェントの情報
+        llm (AzureChatOpenAI, optional): OpenAIのモデル. Defaults to llm.
+        user_info (User, optional): ユーザー情報. Defaults to User().
+        tools (list, optional): ツール. Defaults to None.
+    
+    """
     def __init__(
             self,
+            assistant_info: str,
             llm: AzureChatOpenAI = llm,
-            user_info: User = None,
-            assistant_info: str = None,
-            tools: list = None,
+            user_info: User = User(),
+            tools: list = [],
     ):
         self.llm = llm
         self.user_info = user_info
         self.assistant_info = assistant_info
-        self.tools = tools
+
+        if tools is []:
+            self.tools = template_tools
+        else:
+            self.tools = tools + template_tools
 
         self.full_prompt = PromptTemplate(assistant_info=assistant_info, user_info=self.user_info)
-    
-    def run(self, message: str):
 
+        self.get_agent_info()
+    
+    def invoke(self, message: str):
+        """
+        エージェントを実行する関数
+
+        Args:
+            message (str): ユーザーからのメッセージ
+        """
         agent = create_tool_calling_agent(llm=self.llm, tools=self.tools, prompt=self.full_prompt.full_prompt)
         agent_executor = AgentExecutor(agent=agent, tools=self.tools)
         try:
@@ -39,8 +70,16 @@ class Agent:
                 })
         except Exception as e:
             logger.error(f"エージェントの実行に失敗しました。エラー内容: {e}")
-            raise ValueError("エージェントの実行に失敗しました。時間をおいて再度お試しください。")
+            result = "エージェントの実行に失敗しました。"
         return result
+    
+    def get_agent_info(self):
+        self.agent_info = agent_info.format(
+    assistant_info=self.assistant_info,
+    user_info=self.user_info,
+    tools=self.tools
+        )
+        return self.agent_info
 
 
 
@@ -63,5 +102,5 @@ if __name__ == "__main__":
         llm=llm
     )
     
-    result = agent.run("magic function に３")
+    result = agent.invoke("magic function に３")
     print(result)

@@ -110,6 +110,8 @@ class UserPromptTemplate:
         self.user_info = user_info
         if user_info is not None:
             self.user_prompt_template = self._format()
+        else:
+            self.user_prompt_template = None
 
 
     def __str__(self) -> str:
