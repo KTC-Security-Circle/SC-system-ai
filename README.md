@@ -2,6 +2,26 @@
 
 ## 概要
 
+このリポジトリはAI基幹システムのリポジトリになります。
+GitHubからpip installできるように構築されており、再利用性を高めています。
+
+### 使用方法
+
+使用したいバージョンのタグを見つけ、そのタグを使用してpip install します。
+
+```bash
+# 使用したいバージョンがある場合
+pip install git+https://github.com/KTC-Security-Circle/SC-system-ai.git@{使用したいバージョンのタグ}
+# 最新のバージョンを使用したい場合
+pip install git+https://github.com/KTC-Security-Circle/SC-system-ai.git@release
+```
+
+もし最新の開発中コードをインストールしたいときは使用したいバージョンのタグやブランチ名をなくすと最新のmainブランチのコードがインストールされます。
+
+```bash
+pip install git+https://github.com/KTC-Security-Circle/SC-system-ai.git
+```
+
 ## 開発者向け
 
 1. 自身の環境にcloneする
@@ -38,3 +58,7 @@
 3. 環境変数を設定する
    
    `.env.sample`ファイルをコピーし、[docs/env.md](docs/env.md)で確認しながら設定を行う
+
+4. 開発を始める
+   
+   [開発者向けドキュメント](docs/developer.md)から始めてください。
