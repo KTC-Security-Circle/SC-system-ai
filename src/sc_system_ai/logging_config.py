@@ -7,6 +7,10 @@ import logging
 from sc_system_ai.logging_config import setup_logging
 
 logger = logging.getLogger(__name__)
+
+logger.info("ログメッセージ")
+logger.debug("デバッグ時のみ使用するログメッセージ")
+```
 """
 import logging
 
