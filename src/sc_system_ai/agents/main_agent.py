@@ -13,16 +13,14 @@ class MainAgent(Agent):
     def __init__(
             self,
             llm: AzureChatOpenAI = llm,
-            user_info: User = User(),
-            assistant_info: str = main_agent_info,
-            tools: list = main_agent_tools,
+            user_info: User = User()
             ):
         super().__init__(
             llm=llm, 
-            user_info=user_info, 
-            assistant_info=assistant_info, 
-            tools=tools
+            user_info=user_info
             )
+        self.assistant_info = main_agent_info
+        super().set_tools(main_agent_tools)
 
 
 

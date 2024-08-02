@@ -8,7 +8,7 @@ class PromptTemplate:
     """
     フルのシステムプロンプトを作成するクラス
 
-    Attributes:
+    Args:
     - full_system_template: システムプロンプトのテンプレート
     - assistant_info: アシスタントの情報を入力するためのプロンプト
     - user_info: ユーザーの情報を入力するためのプロンプト
