@@ -28,8 +28,9 @@ def setup_logging():
     # 自作パッケージのロガーを設定
     # この設定を行うことで、自作パッケージのログメッセージのみDEBUGレベルで出力される
     # sc_system_ai以下のモジュールでloggerを取得する場合と__main__でloggerを取得する場合でログレベルを変更する
+    package_logger = logging.getLogger("__main__")
+    package_logger.setLevel(logging.DEBUG)
     package_logger = logging.getLogger("sc_system_ai")
     package_logger.setLevel(logging.DEBUG)
-    debug_logger = logging.getLogger("__main__")
-    debug_logger.setLevel(logging.DEBUG)
+
 
