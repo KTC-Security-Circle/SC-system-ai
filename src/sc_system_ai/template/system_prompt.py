@@ -5,6 +5,19 @@ from sc_system_ai.template.prompts import assistant_info_template, full_system_t
 from sc_system_ai.template.user_prompts import UserPromptTemplate, User
 
 class PromptTemplate:
+    """
+    フルのシステムプロンプトを作成するクラス
+
+    Attributes:
+    - full_system_template: システムプロンプトのテンプレート
+    - assistant_info: アシスタントの情報を入力するためのプロンプト
+    - user_info: ユーザーの情報を入力するためのプロンプト
+
+    Methods:
+    - create_prompt: フルのシステムプロンプトを作成する関数
+    - get_prompt: フルのシステムプロンプトを取得する関数
+    - show_prompt: プロンプトを表示する関数
+    """
     def __init__(
             self, 
             full_system_template: str = full_system_template,
@@ -34,9 +47,11 @@ class PromptTemplate:
         return self.full_prompt
     
     def get_prompt(self):
+        """フルのシステムプロンプトを取得する関数"""
         return self.full_prompt.messages
 
     def show_prompt(self):
+        """プロンプトを表示する関数"""
         print(f'prompts: {self.full_prompt.messages} \ninput_variables: {self.full_prompt.input_variables}')
 
 
