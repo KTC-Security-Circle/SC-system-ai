@@ -55,7 +55,7 @@ if __name__ == __main__:
 
 ```python
 import logging
-from sc_system_ai.logging_config import setup_logging
+
 
 logger = logging.getLogger(__name__)
 ```
@@ -65,6 +65,11 @@ logger = logging.getLogger(__name__)
 ```python
 logger.info("ログメッセージ")
 logger.debug("デバッグ時のみ使用するログメッセージ")
+
+# デバッグ時のみログメッセージを出力するためには、以下のように設定する
+if __name__ == __main__:
+    from sc_system_ai.logging_config import setup_logging
+    setup_loggingU()
 ```
 
 ### ブランチ戦略
