@@ -188,6 +188,8 @@ class UserPromptTemplate:
 
 
 if __name__ == "__main__":
+    from sc_system_ai.logging_config import setup_logging
+    setup_logging()
     user = User(name="hogehoge", major="fugafuga専攻")
     print(user)
     user.update_user(name="update")

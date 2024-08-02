@@ -7,7 +7,6 @@ Agentの基底クラスを作成します。このクラスは、エージェン
 
 """
 import logging
-from sc_system_ai.logging_config import setup_logging
 
 from langchain_openai import AzureChatOpenAI
 from langchain.agents import create_tool_calling_agent, AgentExecutor
@@ -113,6 +112,8 @@ class Agent:
 
 
 if __name__ == "__main__":
+    from sc_system_ai.logging_config import setup_logging
+    setup_logging()
     # ユーザー情報
     user_name = "hogehoge"
     user_major = "fugafuga専攻"
