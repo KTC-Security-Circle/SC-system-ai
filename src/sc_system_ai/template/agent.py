@@ -3,16 +3,7 @@
 
 Agentの基底クラスを作成します。このクラスは、エージェントの情報を保持し、エージェントを実行するための関数を提供します。
 
-使用例:
-```python
-from sc_system_ai.template.agents import Agent
-
-# Agentの作成
-class MyAgent(Agent):
-    def __init__(self, assistant_info, user_info, tools):
-        super().__init__(assistant_info, user_info, tools)
-
-# エージェントの実行
+詳しい使用方法は `docs/make-agent.md` を参照してください。
 
 """
 from langchain_openai import AzureChatOpenAI
@@ -76,7 +67,7 @@ class Agent:
         agent = create_tool_calling_agent(llm=self.llm, tools=self.tools, prompt=self.full_prompt.full_prompt)
         agent_executor = AgentExecutor(agent=agent, tools=self.tools)
         try: # エージェントの実行
-            logger.info(f"エージェントの実行を開始します。\n-----------\n")
+            logger.info(f"エージェントの実行を開始します。\n-------------------\n")
             result = agent_executor.invoke({
                 "chat_history": self.user_info.conversations.format_conversation(),
                 "messages": message, 
@@ -94,6 +85,11 @@ class Agent:
             tools=self.tools
         )
         return self.agent_info
+    
+    def display_agent_info(self):
+        """Agentの情報を表示する関数"""
+        self.get_agent_info()
+        print(self.agent_info)
 
 
 

@@ -28,3 +28,4 @@ assistant_info_template = """あなたは京都テックという名前の学校
 user_info_template = """name: {name},
 major: {major}
 """
+
