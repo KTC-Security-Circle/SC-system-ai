@@ -54,9 +54,17 @@ if __name__ == __main__:
 作成するモジュールの重要個所ではloggingをしてください。
 
 ```python
-from sc_system_ai.logging from logger
+import logging
+from sc_system_ai.logging_config import setup_logging
 
-logger.info("ログに流すコメントを記述")
+logger = logging.getLogger(__name__)
+```
+
+上記で設定した後、次のように表示させる
+
+```python
+logger.info("ログメッセージ")
+logger.debug("デバッグ時のみ使用するログメッセージ")
 ```
 
 ### ブランチ戦略
