@@ -42,3 +42,4 @@ if __name__ == "__main__":
     # print(main_agent.get_agent_prompt())
     main_agent.display_agent_prompt()
     print(main_agent.invoke("magic function に３をいれて"))
+
