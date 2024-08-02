@@ -16,7 +16,7 @@ class PromptTemplate:
     Methods:
     - create_prompt: フルのシステムプロンプトを作成する関数
     - get_prompt: フルのシステムプロンプトを取得する関数
-    - show_prompt: プロンプトを表示する関数
+    - display_prompt: プロンプトを表示する関数
     """
     def __init__(
             self, 
@@ -31,13 +31,15 @@ class PromptTemplate:
         self.user_info_prompt = UserPromptTemplate(user_info=self.user_info)
 
         self.full_prompt = self.create_prompt(assistant_info=self.assistant_info, user_info=self.user_info)
-    
-    def __str__(self):
-        return self.full_prompt
 
     def create_prompt(self, assistant_info: str = None, user_info: str = None):
         """フルのシステムプロンプトを作成する関数"""
-        formatted_system_prompt = self.full_system_template.format(assistant_info=assistant_info, user_info=self.user_info_prompt)
+        if assistant_info is not None:
+            self.assistant_info = assistant_info
+        if user_info is not None:
+            self.user_info = user_info
+
+        formatted_system_prompt = self.full_system_template.format(assistant_info=self.assistant_info, user_info=self.user_info)
         self.full_prompt = ChatPromptTemplate.from_messages([
             ("system", formatted_system_prompt), # システムプロンプト
             ("placeholder", "{chat_history}"),  # ユーザーとの会話
@@ -50,7 +52,7 @@ class PromptTemplate:
         """フルのシステムプロンプトを取得する関数"""
         return self.full_prompt.messages
 
-    def show_prompt(self):
+    def display_prompt(self):
         """プロンプトを表示する関数"""
         print(f'prompts: {self.full_prompt.messages} \ninput_variables: {self.full_prompt.input_variables}')
 

@@ -49,13 +49,18 @@ class Agent:
         self.assistant_info = None
         self.tools = template_tools
 
-        self.full_prompt = PromptTemplate(assistant_info=self.assistant_info, user_info=self.user_info)
+        self.prompt_template = PromptTemplate(assistant_info=self.assistant_info, user_info=self.user_info)
 
         self.get_agent_info()
 
     def set_tools(self, tools):
         """ツールを追加する関数"""
         self.tools += tools
+
+    def set_assistant_info(self, assistant_info: str):
+        """アシスタント情報を設定する関数"""
+        self.assistant_info = assistant_info
+        self.prompt_template.create_prompt(assistant_info=self.assistant_info)
     
     def invoke(self, message: str):
         """
@@ -64,7 +69,7 @@ class Agent:
         Args:
             message (str): ユーザーからのメッセージ
         """
-        agent = create_tool_calling_agent(llm=self.llm, tools=self.tools, prompt=self.full_prompt.full_prompt)
+        agent = create_tool_calling_agent(llm=self.llm, tools=self.tools, prompt=self.prompt_template.full_prompt)
         agent_executor = AgentExecutor(agent=agent, tools=self.tools)
         try: # エージェントの実行
             logger.info(f"エージェントの実行を開始します。\n-------------------\n")
@@ -90,6 +95,14 @@ class Agent:
         """Agentの情報を表示する関数"""
         self.get_agent_info()
         print(self.agent_info)
+    
+    def get_agent_prompt(self):
+        """Agentのプロンプトを取得する関数"""
+        return self.prompt_template.get_prompt()
+    
+    def display_agent_prompt(self):
+        """Agentのプロンプトを表示する関数"""
+        self.prompt_template.display_prompt()
 
 
 
@@ -104,7 +117,7 @@ if __name__ == "__main__":
     user_info = User(name=user_name, major=user_major)
     user_info.conversations.add_conversations_list(history)
 
-    tools = [magic_function.magic_function]
+    tools = [magic_function]
     agent = Agent(
         user_info=user_info,
         assistant_info="あなたは優秀な校正者です。", 

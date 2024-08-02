@@ -22,6 +22,7 @@ class MainAgent(Agent):
             user_info=user_info
         )
         self.assistant_info = main_agent_info
+        super().set_assistant_info(self.assistant_info)
         super().set_tools(main_agent_tools)
 
 
@@ -38,4 +39,6 @@ if __name__ == "__main__":
 
     main_agent = MainAgent(user_info=user_info)
     main_agent.display_agent_info()
+    # print(main_agent.get_agent_prompt())
+    main_agent.display_agent_prompt()
     print(main_agent.invoke("magic function に３をいれて"))
