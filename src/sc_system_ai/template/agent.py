@@ -6,14 +6,18 @@ Agentの基底クラスを作成します。このクラスは、エージェン
 詳しい使用方法は `docs/make-agent.md` を参照してください。
 
 """
+import logging
+
 from langchain_openai import AzureChatOpenAI
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 
-from sc_system_ai.logging import logger
 from sc_system_ai.template.ai_settings import llm
 from sc_system_ai.template.user_prompts import User
 from sc_system_ai.template.system_prompt import PromptTemplate
 from sc_system_ai.agents.tools import magic_function, search_duckduckgo
+
+# ロガーの設定
+logger = logging.getLogger(__name__)
 
 # 全てのAgentに共通するツール
 template_tools = [search_duckduckgo]
@@ -73,6 +77,7 @@ class Agent:
         agent_executor = AgentExecutor(agent=agent, tools=self.tools)
         try: # エージェントの実行
             logger.info(f"エージェントの実行を開始します。\n-------------------\n")
+            logger.debug(f"最終的なプロンプト: {self.prompt_template.full_prompt.messages}")
             result = agent_executor.invoke({
                 "chat_history": self.user_info.conversations.format_conversation(),
                 "messages": message, 
@@ -107,6 +112,8 @@ class Agent:
 
 
 if __name__ == "__main__":
+    from sc_system_ai.logging_config import setup_logging
+    setup_logging()
     # ユーザー情報
     user_name = "hogehoge"
     user_major = "fugafuga専攻"

@@ -27,6 +27,8 @@ class MainAgent(Agent):
 
 
 if __name__ == "__main__":
+    from sc_system_ai.logging_config import setup_logging
+    setup_logging()
     # ユーザー情報
     user_name = "hogehoge"
     user_major = "fugafuga専攻"
@@ -42,3 +44,4 @@ if __name__ == "__main__":
     # print(main_agent.get_agent_prompt())
     main_agent.display_agent_prompt()
     print(main_agent.invoke("magic function に３をいれて"))
+
