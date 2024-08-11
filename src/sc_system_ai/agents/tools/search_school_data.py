@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def search_school_database(search_word: str) -> List[Document]:
+    """学校に関する情報を検索する関数"""
     retriever = AzureAISearchRetriever(
         service_name=os.environ["AZURE_AI_SEARCH_SERVICE_NAME"],
         index_name=os.environ["AZURE_AI_SEARCH_INDEX_NAME"],
@@ -24,11 +25,11 @@ def search_school_database(search_word: str) -> List[Document]:
 
 
 class SearchSchoolDataInput(BaseModel):
-    search_word: str = Field(description="Input value for magic function")
+    search_word: str = Field(description="学校に関する情報を検索するためのキーワード")
 
 
 class SearchSchoolDataTool(BaseTool):
-    name = "search_shool_data_tool"
+    name = "search_school_data_tool"
     description = "学校に関する情報を検索するためのツール"
     args_schema: Type[BaseModel] = SearchSchoolDataInput
 
@@ -42,6 +43,7 @@ class SearchSchoolDataTool(BaseTool):
         i = 1
         search_result = []
         for doc in result:
+            # TODO: 参照したドキュメントの情報も返す形に変更予定
             if hasattr(doc, 'page_content'):
                 search_result.append(
                     f'・検索結果{i}は以下の通りです。\n{doc.page_content}\n\n')
@@ -49,9 +51,9 @@ class SearchSchoolDataTool(BaseTool):
         return search_result
 
 
-search_shool_data = SearchSchoolDataTool()
+search_school_data = SearchSchoolDataTool()
 
 if __name__ == "__main__":
     from sc_system_ai.logging_config import setup_logging
     setup_logging()
-    print(search_shool_data.invoke({"search_word": "学校"}))
+    print(search_school_data.invoke({"search_word": "学校"}))
