@@ -69,7 +69,7 @@ logger.debug("デバッグ時のみ使用するログメッセージ")
 # デバッグ時のみログメッセージを出力するためには、以下のように設定する
 if __name__ == __main__:
     from sc_system_ai.logging_config import setup_logging
-    setup_loggingU()
+    setup_logging()
 ```
 
 ### ブランチ戦略
