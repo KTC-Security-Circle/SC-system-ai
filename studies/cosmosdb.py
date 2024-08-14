@@ -83,7 +83,7 @@ vector_search = AzureCosmosDBNoSqlVectorSearch(
     cosmos_database_properties=cosmos_database_properties,
 )
 
-query = "What were the compute requirements for training GPT 4"
-results = vector_search.similarity_search(query)
+# query = "What were the compute requirements for training GPT 4"
+# results = vector_search.similarity_search(query)
+# print(results[0].page_content)
 
-print(results[0].page_content)
