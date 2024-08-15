@@ -4,9 +4,8 @@ from langchain_core.documents import Document
 from langchain_community.vectorstores.azure_cosmos_db_no_sql import (
     AzureCosmosDBNoSqlVectorSearch,
 )
-import azure.cosmos.exceptions as exceptions
 from azure.cosmos import CosmosClient, PartitionKey
-from typing import List, Optional, Any, Dict
+from typing import List, Any, Dict
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -32,9 +31,9 @@ vector_embedding_policy = {
     ]
 }
 
+# cosmosDBの設定
 HOST = os.environ["AZURE_COSMOS_DB_ENDPOINT"]
 KEY = os.environ["AZURE_COSMOS_DB_KEY"]
-
 cosmos_client = CosmosClient(HOST, KEY)
 database_name = os.environ["AZURE_COSMOS_DB_DATABASE"]
 container_name = os.environ["AZURE_COSMOS_DB_CONTAINER"]
@@ -43,7 +42,8 @@ cosmos_container_properties = {"partition_key": partition_key}
 cosmos_database_properties = {"id": database_name}
 
 
-class CosmosManager(AzureCosmosDBNoSqlVectorSearch):
+class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
+    """AzureCosmosDBNoSqlVectorSearchの設定を継承しcosmosDBの操作を行うための関数を追加したクラス"""
 
     def __init__(
         self,
@@ -60,7 +60,6 @@ class CosmosManager(AzureCosmosDBNoSqlVectorSearch):
         container_name: str = container_name,
         create_container: bool = False,
     ):
-        """Custom constructor to initialize additional parameters."""
         super().__init__(
             cosmos_client=cosmos_client,
             embedding=embedding,
@@ -74,7 +73,7 @@ class CosmosManager(AzureCosmosDBNoSqlVectorSearch):
         )
 
     def read_all_documents(self) -> List[Document]:
-        """Read all documents from the CosmosDB."""
+        """全てのdocumentsを読み込む関数"""
         query = "SELECT c.id, c.text FROM c"
         items = list(self._container.query_items(
             query=query, enable_cross_partition_query=True))
@@ -90,7 +89,7 @@ class CosmosManager(AzureCosmosDBNoSqlVectorSearch):
 
 
 if __name__ == "__main__":
-    cosmos_manager = CosmosManager()
+    cosmos_manager = CosmosDBManager()
     query = "What were the compute requirements for training GPT 4"
     results = cosmos_manager.read_all_documents()
     print(results[0])
