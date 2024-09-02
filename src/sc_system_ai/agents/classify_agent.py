@@ -6,13 +6,13 @@ from sc_system_ai.template.agent import Agent
 # from sc_system_ai.agents.tools import magic_function
 from sc_system_ai.agents.tools.classify_role import classify_role
 
-main_agent_tools = [
+classify_agent_tools = [
     # magic_function,
     classify_role,
 ]
 
 
-main_agent_info = """
+classify_agent_info = """
 あなたの役割はユーザーの入力に対して、その入力がどのエージェントの役割かを判定し処理を引き継ぐことです。
 
 ユーザーの入力から判定に失敗した場合、ユーザーに新しく入力を求めてください。
@@ -34,9 +34,9 @@ class ClassifyAgent(Agent):
             llm=llm,
             user_info=user_info
         )
-        self.assistant_info = main_agent_info
+        self.assistant_info = classify_agent_info
         super().set_assistant_info(self.assistant_info)
-        super().set_tools(main_agent_tools)
+        super().set_tools(classify_agent_tools)
 
 
 if __name__ == "__main__":
@@ -56,5 +56,6 @@ if __name__ == "__main__":
     classify_agent.display_agent_info()
     # print(main_agent.get_agent_prompt())
     classify_agent.display_agent_prompt()
-    print(classify_agent.invoke("甲子園最高だね"))
+    print(classify_agent.invoke("早退の申請"))
+    # print(classify_agent.invoke("甲子園最高だね"))
 
