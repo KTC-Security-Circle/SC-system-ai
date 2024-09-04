@@ -27,7 +27,9 @@ def keyword_extraction(input: str) -> str:
     """
 
     chain = llm | StrOutputParser()
-    return chain.invoke(requiremments_prompt)
+    res = chain.invoke(requiremments_prompt)
+    logger.debug(f"キーワード抽出の結果: {res}")
+    return res
 
 def classify_role_keyword(user_input: str, role_list: list[str]) -> str:
     role_type = ""
@@ -61,7 +63,9 @@ def keyword_similarity(keyword: str, check_list: list[str]) -> str:
     """
 
     chain = llm | StrOutputParser()
-    return chain.invoke(requiremments_prompt)
+    res = chain.invoke(requiremments_prompt)
+    logger.debug(f"キーワード類似度の結果: {res}")
+    return res
 
 def classify_role_similarity(user_input: str, role_list: list[str]) -> str:
     role_type = ""
@@ -117,7 +121,6 @@ class ClassifyRoleTool(BaseTool):
     ) -> str:
         """use the tool."""
         logger.info(f"Classify Role Toolが次の値で呼び出されました: {input}")
-        logger.debug(f"Classify Role Toolが次の値で呼び出されました: {input}")
         result_role = ""
         result_role_type = ""
 
