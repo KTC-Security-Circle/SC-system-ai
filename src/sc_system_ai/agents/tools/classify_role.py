@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 
+
 #----- キーフレーズ抽出で分析 -----
 def keyword_extraction(input: str) -> str:
 
@@ -124,19 +125,27 @@ class ClassifyRoleTool(BaseTool):
         result_role = ""
         result_role_type = ""
 
-        for role in role_data.keys():
+        for role, role_type  in role_data.items():
+            for check_role in role_type:
+                if check_role[:-1] in input:
+                    result_role = role
+                    result_role_type = check_role
+                    break
+
             if role in input:
                 result_role = role
                 break
 
-        if result_role != "":
-            result_role_type = classify_flow(input, role_data[result_role])
-        else:
+        if result_role == "":
             for role_type in role_data.values():
                 result_role_type = classify_flow(input, role_type)
+
                 if result_role_type != "":
                     result_role = [key for key, value in role_data.items() if value == role_type][0]
+                    
                     break
+        elif result_role_type == "":
+            result_role_type = classify_flow(input, role_data[result_role])
 
         if (result_role == "" and
             result_role_type == ""):
@@ -166,6 +175,6 @@ if __name__ == "__main__":
     }
     """
 
-    input = "申請したい"
+    input = "遅刻届を提出したい"
     print(classify_role.invoke({"input": input}))
     
