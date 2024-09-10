@@ -13,12 +13,12 @@ classify_agent_tools = [
 
 
 classify_agent_info = """
-あなたの役割はユーザーの入力に対して、その入力がどのエージェントの役割かを判定し処理を引き継ぐことです。
+あなたの役割はユーザーの入力に対して、その入力がどのエージェントの役割かを特定し処理を引き継ぐことです。
 
-ユーザーの入力から判定に失敗した場合、ユーザーに新しく入力を求めてください。
-これは、判定に成功するまで繰り返してください。
+ユーザーの入力から特定に失敗した場合、ユーザーに新しく入力を求めてください。
 
-判定に成功した後、どのエージェントがふさわしいかを出力してください。
+成功した場合、ふさわしいエージェントに処理を引き継いでください。
+各エージェントは与えたツールで呼び出せます。
 """
 
 # agentクラスの作成
@@ -37,6 +37,18 @@ class ClassifyAgent(Agent):
         self.assistant_info = classify_agent_info
         super().set_assistant_info(self.assistant_info)
         super().set_tools(classify_agent_tools)
+
+    def invoke(self, user_input: str) -> str:
+        result = super().invoke(user_input)
+
+        if type(result) is dict:
+            now_conversation = [
+                ("human", user_input),
+                ("ai", result["output"])
+            ]
+            self.user_info.conversations.add_conversations_list(now_conversation)
+
+        return result
 
 
 if __name__ == "__main__":
@@ -57,5 +69,5 @@ if __name__ == "__main__":
     # print(main_agent.get_agent_prompt())
     classify_agent.display_agent_prompt()
     print(classify_agent.invoke("早退の申請"))
-    # print(classify_agent.invoke("甲子園最高だね"))
+    print(classify_agent.invoke("甲子園最高だね"))
 
