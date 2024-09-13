@@ -5,10 +5,12 @@ from sc_system_ai.template.ai_settings import llm
 from sc_system_ai.template.agent import Agent
 # from sc_system_ai.agents.tools import magic_function
 from sc_system_ai.agents.tools.classify_role import classify_role
+from sc_system_ai.agents.tools.calling_dummy_agent import calling_dummy_agent
 
 classify_agent_tools = [
     # magic_function,
     classify_role,
+    calling_dummy_agent,
 ]
 
 
@@ -18,7 +20,10 @@ classify_agent_info = """あなたの役割は適切なエージェントを選�
 
 各エージェントは与えたツールで呼び出せます。
 エージェントを呼び出す際には、以下の情報が必要です。
-- 会話履歴
+- ユーザー情報
+    user_infoを渡してください
+- ユーザーの入力
+    ユーザーの入力を渡してください
 
 エージェントに処理を引き継いだ場合は、そのエージェントの出力をあなたの出力としてください。
 これは、そのエージェントが処理を完了するまで続けてください。
@@ -43,18 +48,6 @@ class ClassifyAgent(Agent):
         super().set_assistant_info(self.assistant_info)
         super().set_tools(classify_agent_tools)
 
-    def invoke(self, user_input: str):
-        result = super().invoke(user_input)
-
-        if type(result) is dict:
-            new_conversation = [
-                ("human", user_input),
-                ("ai", result["output"])
-            ]
-            self.user_info.conversations.add_conversations_list(new_conversation)
-
-        return result
-
 
 
 if __name__ == "__main__":
@@ -70,10 +63,23 @@ if __name__ == "__main__":
     user_info = User(name=user_name, major=user_major)
     user_info.conversations.add_conversations_list(history)
 
-    classify_agent = ClassifyAgent(user_info=user_info)
-    classify_agent.display_agent_info()
-    # print(main_agent.get_agent_prompt())
-    classify_agent.display_agent_prompt()
-    print(classify_agent.invoke("早退の申請"))
-    print(classify_agent.invoke("甲子園最高だね"))
+    while True:
+        classify_agent = ClassifyAgent(user_info=user_info)
+        # classify_agent.display_agent_info()
+        # print(main_agent.get_agent_prompt())
+        # classify_agent.display_agent_prompt()
+
+        user = input("ユーザー: ")
+        if user == "exit":
+            break
+
+        resp = classify_agent.invoke(user)
+        if type(resp) is dict:
+            new_conversation = [
+                ("human", user),
+                ("ai", resp["output"])
+            ]
+            user_info.conversations.add_conversations_list(new_conversation)
+
+        print(resp)
 

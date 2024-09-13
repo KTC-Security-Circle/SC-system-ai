@@ -58,18 +58,6 @@ class DummyAgent(Agent):
         super().set_assistant_info(self.assistant_info)
         super().set_tools(dummy_agent_tools)
 
-    def invoke(self, user_input: str):
-        result = super().invoke(user_input)
-
-        if type(result) is dict:
-            new_conversation = [
-                ("human", user_input),
-                ("ai", result["output"])
-            ]
-            self.user_info.conversations.add_conversations_list(new_conversation)
-
-        return result
-
 
 
 if __name__ == "__main__":
@@ -85,15 +73,23 @@ if __name__ == "__main__":
     user_info = User(name=user_name, major=user_major)
     user_info.conversations.add_conversations_list(history)
 
-    main_agent = DummyAgent(user_info=user_info)
-    main_agent.display_agent_info()
-    # print(main_agent.get_agent_prompt())
-    main_agent.display_agent_prompt()
-    print(main_agent.invoke("公欠届を提出したい"))
-
     while True:
+        main_agent = DummyAgent(user_info=user_info)
+        # main_agent.display_agent_info()
+        # print(main_agent.get_agent_prompt())
+        # main_agent.display_agent_prompt()
+
         user = input("ユーザー: ")
         if user == "exit":
             break
-        print(main_agent.invoke(user))
+
+        resp = main_agent.invoke(user)
+        if type(resp) is dict:
+            new_conversation = [
+                ("human", user),
+                ("ai", resp["output"])
+            ]
+            user_info.conversations.add_conversations_list(new_conversation)
+        
+        print(resp)
 
