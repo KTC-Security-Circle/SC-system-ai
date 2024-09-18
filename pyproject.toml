@@ -17,6 +17,8 @@ dependencies = [
     "duckduckgo-search",
     "azure-cosmos",
     "pypdf",
+    "beautifulsoup4",
+    "lxml",
 ]
 
 [tool.setuptools.packages.find]
