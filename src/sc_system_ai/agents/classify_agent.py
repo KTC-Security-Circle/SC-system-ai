@@ -5,12 +5,13 @@ from sc_system_ai.template.ai_settings import llm
 from sc_system_ai.template.agent import Agent
 # from sc_system_ai.agents.tools import magic_function
 from sc_system_ai.agents.tools.classify_role import classify_role
-from sc_system_ai.agents.tools.calling_dummy_agent import calling_dummy_agent
+# from sc_system_ai.agents.tools.calling_dummy_agent import calling_dummy_agent
+from sc_system_ai.agents.tools.calling_agent import calling_agent
 
 classify_agent_tools = [
     # magic_function,
     classify_role,
-    calling_dummy_agent,
+    # calling_dummy_agent,
 ]
 
 
@@ -42,6 +43,22 @@ class ClassifyAgent(Agent):
         self.assistant_info = classify_agent_info
         super().set_assistant_info(self.assistant_info)
         super().set_tools(classify_agent_tools)
+
+    def invoke(self, user_input: str):
+        resp = super().invoke(user_input)
+
+        if type(resp) is dict:
+        # --- respからエージェントを選択する処理 ---
+            pass
+        
+        result = calling_agent(
+            agent_name="dummyAgent",
+            user_info=self.user_info,
+            user_input=user_input
+        )
+
+        return result
+
 
 
 
