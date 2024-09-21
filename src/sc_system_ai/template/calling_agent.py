@@ -47,10 +47,11 @@ class CallingAgent(BaseTool):
     class Config:
         validate_assignment = True # 再代入時の型チェックを有効
 
+    # agentフィールドのバリデータ
     @validator("agent")
     def check_agent(cls, v):
         if not isinstance(v, Agent):
-            raise ValueError("agentはAgentクラス、またはAgentのサブクラスのインスタンスである必要があります。")
+            raise ValueError("set_agentの返却値はAgentクラス、またはAgentのサブクラスである必要があります。")
         return v
 
     def _run(
