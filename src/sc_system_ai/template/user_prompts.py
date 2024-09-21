@@ -43,7 +43,7 @@ user.conversations.add_conversations_list(conversations)
 print(user.conversations.get_conversations())
 ```
 """
-from pydantic.v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from typing import Optional, List, Tuple
 from langchain_core.messages import HumanMessage, AIMessage
 from sc_system_ai.template.prompts import user_info_template
