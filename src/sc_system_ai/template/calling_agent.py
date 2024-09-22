@@ -1,7 +1,7 @@
 import logging
 
 from typing import Type
-from langchain.pydantic_v1 import BaseModel, Field, PrivateAttr
+from langchain.pydantic_v1 import BaseModel, Field
 from langchain_core.tools import BaseTool
 
 from sc_system_ai.template.user_prompts import User
@@ -45,7 +45,6 @@ class CallingAgent(BaseTool):
 
     user_info: User = Field(description="ユーザー情報", default=User())
     agent: Type[Agent] = Agent
-    _agent: Agent = PrivateAttr(default_factory=Agent)
 
     def __init__(self) -> None:
         super().__init__()
