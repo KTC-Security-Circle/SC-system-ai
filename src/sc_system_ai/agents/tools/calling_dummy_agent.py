@@ -10,11 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 class CallingDummyAgent(CallingAgent):
-    name = "calling_dummy_agent"
-    description = "ダミーエージェントを呼び出すツール"
-
-    def set_agent(self):
-        return DummyAgent
+    def __init__(self):
+        super().__init__()
+        self.set_tool_info(
+            name="calling_dummy_agent",
+            description="ダミーエージェントを呼び出すツール",
+            agent=DummyAgent
+        )
 
 calling_dummy_agent = CallingDummyAgent()
 

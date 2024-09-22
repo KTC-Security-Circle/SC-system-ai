@@ -1,7 +1,7 @@
 import logging
 
 from typing import Type
-from langchain.pydantic_v1 import BaseModel, Field, validator
+from langchain.pydantic_v1 import BaseModel, Field, PrivateAttr
 from langchain_core.tools import BaseTool
 
 from sc_system_ai.template.user_prompts import User
@@ -17,15 +17,16 @@ class CallingAgent(BaseTool):
     """
     エージェントを呼び出すツール
 
-    - 呼び出すエージェントはset_agentメソッドで設定
-    - ツール名と説明は新たに定義
+    - __init__をオーバーライドし、set_tool_infoメソッドでツール情報を設定
     ```python
     class CallingDummyAgent(CallingAgent):
-        name = "calling_dummy_agent"
-        description = "ダミーエージェントを呼び出すツール"
-
-        def set_agent(self):
-            return DummyAgent
+        def __init__(self):
+            super().__init__()
+            self.set_tool_info(
+                name="calling_dummy_agent",
+                description="ダミーエージェントを呼び出すツール",
+                agent=DummyAgent
+            )
     ```
 
     - ユーザー情報は、set_user_infoメソッドで設定
@@ -41,18 +42,16 @@ class CallingAgent(BaseTool):
     name = "calling_agent"
     description = "エージェントを呼び出すツール"
     args_schema: Type[BaseModel] = CallingAgentInput
+
     user_info: User = Field(description="ユーザー情報", default=User())
-    agent: Agent = Field(description="呼び出し対象のエージェント", default_factory=Agent)
+    agent: Type[Agent] = Agent
+    _agent: Agent = PrivateAttr(default_factory=Agent)
+
+    def __init__(self) -> None:
+        super().__init__()
 
     class Config:
         validate_assignment = True # 再代入時の型チェックを有効
-
-    # agentフィールドのバリデータ
-    @validator("agent")
-    def check_agent(cls, v):
-        if not isinstance(v, Agent):
-            raise ValueError("set_agentの返却値はAgentクラス、またはAgentのサブクラスである必要があります。")
-        return v
 
     def _run(
             self,
@@ -63,7 +62,7 @@ class CallingAgent(BaseTool):
 
         # エージェントの呼び出し
         try:
-            self._call_agent()
+            agent = self.agent(user_info=self.user_info)
         except Exception as e:
             logger.error(f"エージェントの呼び出しに失敗しました: {e}")
             raise e
@@ -71,17 +70,8 @@ class CallingAgent(BaseTool):
             logger.info(f"エージェントの呼び出しに成功しました: {self.agent}")
             logger.debug(f"エージェントの呼び出しに成功しました: {self.agent}")
 
-        resp = self.agent.invoke(user_input)
-
+        resp = agent.invoke(user_input)
         return resp["output"] if type(resp) is dict else resp
-
-    def _call_agent(self) -> None:
-        """エージェントの呼び出し"""
-        agent_cls = self.set_agent()
-
-        if type(agent_cls) is not type:
-            raise TypeError("set_agentメソッドではエージェントのクラスを返却する必要があります。")
-        self.agent = agent_cls(user_info=self.user_info)
 
     def set_user_info(self, user_info: User) -> None:
         """ユーザー情報の設定
@@ -95,19 +85,22 @@ class CallingAgent(BaseTool):
             conversations=user_info.conversations
         )
 
-    def set_agent(self) -> type:
-        """呼び出すエージェントの設定
-        返却値を設定するエージェントのクラスに変更
+    def set_tool_info(
+            self,
+            name: str,
+            description: str,
+            agent: Type[Agent]
+        ) -> None:
+        """ツール情報の設定
 
-        例:
-        DummyAgentを設定する場合
-        ```python
-        def set_agent(self):
-            return DummyAgent
-        ```
+        Args:
+            name (str): ツール名
+            description (str): ツールの説明
+            agent (Type[Agent]): 呼び出すエージェントのクラス
         """
-        return Agent
-
+        self.name = name
+        self.description = description
+        self.agent = agent
 
 
 calling_agent = CallingAgent()
