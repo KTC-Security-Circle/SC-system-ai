@@ -8,12 +8,14 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+from sc_system_ai.template.azure_cosmos import CosmosDBManager
+
 
 logger = logging.getLogger(__name__)
 
 
-def search_school_database(search_word: str) -> List[Document]:
-    """学校に関する情報を検索する関数"""
+def search_school_database_aisearch(search_word: str) -> List[Document]:
+    """学校に関する情報を検索する関数(過去のデータベースを参照)"""
     retriever = AzureAISearchRetriever(
         service_name=os.environ["AZURE_AI_SEARCH_SERVICE_NAME"],
         index_name=os.environ["AZURE_AI_SEARCH_INDEX_NAME"],
@@ -22,6 +24,11 @@ def search_school_database(search_word: str) -> List[Document]:
         top_k=3
     )
     return retriever.invoke(search_word)
+
+def search_school_database_cosmos(search_word: str, top_k: int = 2) -> List[Document]:
+    """学校に関する情報を検索する関数(現在のデータベースを参照)"""
+    cosmos_manager = CosmosDBManager()
+    return cosmos_manager.similarity_search(search_word, k=top_k)
 
 
 class SearchSchoolDataInput(BaseModel):
@@ -39,7 +46,7 @@ class SearchSchoolDataTool(BaseTool):
     ) -> List[str]:
         """use the tool."""
         logger.info(f"Search School Data Toolが次の値で呼び出されました: {search_word}")
-        result = search_school_database(search_word)
+        result = search_school_database_cosmos(search_word)
         i = 1
         search_result = []
         for doc in result:
