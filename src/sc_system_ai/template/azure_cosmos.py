@@ -92,6 +92,13 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
                 Document(page_content=text, metadata=item))
         logger.debug(f"{docs[0].page_content=}, \n\nlength: {len(docs)}")
         return docs
+    
+    def get_source_by_id(self, id: str) -> str:
+        """idを指定してsourceを取得する関数"""
+        logger.info(f"{id=}のsourceを取得します")
+        item = self._container.read_item(item=id, partition_key=id)
+        return item.get("source")
+
 
 
 if __name__ == "__main__":
@@ -100,6 +107,12 @@ if __name__ == "__main__":
 
     cosmos_manager = CosmosDBManager()
     query = "京都テック"
-    results = cosmos_manager.read_all_documents()
-    # results = cosmos_manager.similarity_search(query)
-    print(results[0].page_content)
+    # results = cosmos_manager.read_all_documents()
+    results = cosmos_manager.similarity_search(query, k=1)
+    print(results[0])
+
+    # idで指定したドキュメントのsourceを取得
+    ids = results[0].metadata["id"]
+    print(f"{ids=}")
+    doc = cosmos_manager.get_source_by_id(ids)
+    print(doc)

@@ -28,7 +28,12 @@ def search_school_database_aisearch(search_word: str) -> List[Document]:
 def search_school_database_cosmos(search_word: str, top_k: int = 2) -> List[Document]:
     """学校に関する情報を検索する関数(現在のデータベースを参照)"""
     cosmos_manager = CosmosDBManager()
-    return cosmos_manager.similarity_search(search_word, k=top_k)
+    docs = cosmos_manager.similarity_search(search_word, k=top_k)
+
+    for doc in docs:
+        source = cosmos_manager.get_source_by_id(doc.metadata["id"])
+        doc.metadata["source"] = source
+    return docs
 
 
 class SearchSchoolDataInput(BaseModel):
@@ -50,10 +55,9 @@ class SearchSchoolDataTool(BaseTool):
         i = 1
         search_result = []
         for doc in result:
-            # TODO: 参照したドキュメントの情報も返す形に変更予定
             if hasattr(doc, 'page_content'):
                 search_result.append(
-                    f'・検索結果{i}は以下の通りです。\n{doc.page_content}\n\n')
+                    f'・検索結果{i}は以下の通りです。\n{doc.page_content}\n参考URL: "{doc.metadata["source"]}"\n\n')
                 i += 1
         return search_result
 
