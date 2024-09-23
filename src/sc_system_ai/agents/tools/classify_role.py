@@ -3,7 +3,6 @@ import logging
 from typing import Type, Literal
 from langchain.pydantic_v1 import BaseModel, Field
 from langchain_core.tools import BaseTool
-from langchain_core.output_parsers import StrOutputParser
 
 from sc_system_ai.template.ai_settings import llm
 
@@ -11,6 +10,9 @@ from sc_system_ai.template.ai_settings import llm
 logger = logging.getLogger(__name__)
 
 #----- ユーザー入力から役割を分類するツール -----
+
+#----- 類似度で分析 -----
+
 class Output(BaseModel):
     word: Literal[
         # role
@@ -22,10 +24,8 @@ class Output(BaseModel):
         "早退届",
         "公欠届", 
     ]
-    similarity_score: float
+    similarity_score: float = Field(ge=0.0, le=1.0)
 
-
-#----- 類似度で分析 -----
 def keyword_similarity(keyword: str, check_list: list[str]) -> str:
     requiremments_prompt = f"""文章と単語のリストを与えます。
     条件に従いリストの中から文章に最も関連性が高い単語と類似度を教えてください。
