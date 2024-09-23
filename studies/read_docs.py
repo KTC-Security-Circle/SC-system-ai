@@ -1,16 +1,13 @@
 """様々な媒体からドキュメントを読み込む方法についてまとめたファイル"""
 
+from bs4 import BeautifulSoup
+import re
+from langchain_text_splitters import HTMLSectionSplitter, CharacterTextSplitter
+from langchain_community.document_loaders import RecursiveUrlLoader
+from langchain_community.document_loaders import WebBaseLoader
 import os
 # ユーザーエージェントを設定しないとエラーが出るので設定
 os.environ['USER_AGENT'] = "my_user_agent"
-
-from langchain_community.document_loaders import WebBaseLoader
-from langchain_community.document_loaders import RecursiveUrlLoader
-from langchain_text_splitters import HTMLSectionSplitter
-
-import re
-from bs4 import BeautifulSoup
-
 
 
 url = "https://kyoto-tech.ac.jp/"
@@ -33,6 +30,7 @@ def bs4_extractor(html: str) -> str:
 def recursive_loader():
     """再帰的にドキュメントを読み込む"""
     loader = RecursiveUrlLoader(url, max_depth=1, extractor=bs4_extractor)
+    # loader = RecursiveUrlLoader(url, max_depth=1)
     docs = loader.load()
     print(docs[0])
     for doc in docs:
@@ -42,16 +40,30 @@ def recursive_loader():
 
 
 def html_splitter(docs):
-    """htmlを分割する"""
+    """htmlで分割する"""
     headers_to_split_on = [("h1", "Header 1"), ("h2", "Header 2")]
 
     html_splitter = HTMLSectionSplitter(headers_to_split_on)
     html_header_splits = html_splitter.split_documents(docs)
     print(html_header_splits)
-    return 
+    return
 
+
+def character_splitter(docs):
+    """文字列で分割する"""
+    character_splitter = CharacterTextSplitter(
+        chunk_size=1000, chunk_overlap=200)
+    splited_docs = character_splitter.split_documents(docs)
+    print(splited_docs[0:2])
+    print(len(splited_docs))
+    return splited_docs
 
 
 if __name__ == "__main__":
     docs = recursive_loader()
-    html_splitter(docs)
+    # metadataのtitleがTitleとなっているので、変更
+    # for doc in docs:
+    #     doc.metadata["Title"] = doc.metadata["title"]
+    #     del doc.metadata["title"]
+    # html_splitter(docs)
+    character_splitter(docs)
