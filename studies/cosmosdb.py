@@ -11,6 +11,8 @@ from langchain_community.vectorstores.azure_cosmos_db_no_sql import (
 )
 from langchain_openai import AzureOpenAIEmbeddings
 
+from read_docs import recursive_loader, character_splitter
+
 # Load the PDF
 # loader = PyPDFLoader("https://arxiv.org/pdf/2303.08774.pdf")
 # data = loader.load()
@@ -22,6 +24,9 @@ from langchain_openai import AzureOpenAIEmbeddings
 
 # print(docs[0])
 
+# 学校のホームページからドキュメントを読み込む
+# docs = recursive_loader()
+# splitted_docs = character_splitter(docs)
 
 indexing_policy = {
     "indexingMode": "consistent",
@@ -46,8 +51,8 @@ HOST = os.getenv("AZURE_COSMOS_DB_ENDPOINT")
 KEY = os.getenv("AZURE_COSMOS_DB_KEY")
 
 cosmos_client = CosmosClient(HOST, KEY)
-database_name = "langchain_python_db"
-container_name = "langchain_python_container"
+database_name = "school_db"
+container_name = "school_container"
 partition_key = PartitionKey(path="/id")
 cosmos_container_properties = {"partition_key": partition_key}
 cosmos_database_properties = {"id": database_name}
@@ -61,7 +66,7 @@ openai_embeddings = AzureOpenAIEmbeddings(
 
 # insert the documents in AzureCosmosDBNoSql with their embedding
 # vector_search = AzureCosmosDBNoSqlVectorSearch.from_documents(
-#     documents=docs,
+#     documents=splitted_docs,
 #     embedding=openai_embeddings,
 #     cosmos_client=cosmos_client,
 #     database_name=database_name,
@@ -84,6 +89,7 @@ vector_search = AzureCosmosDBNoSqlVectorSearch(
 )
 
 # query = "What were the compute requirements for training GPT 4"
-# results = vector_search.similarity_search(query)
-# print(results[0].page_content)
+query = "京都テック"
+results = vector_search.similarity_search(query)
+print(results[0].page_content)
 

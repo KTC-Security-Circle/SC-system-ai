@@ -53,10 +53,10 @@ def character_splitter(docs):
     """文字列で分割する"""
     character_splitter = CharacterTextSplitter(
         chunk_size=1000, chunk_overlap=200)
-    splited_docs = character_splitter.split_documents(docs)
-    print(splited_docs[0:2])
-    print(len(splited_docs))
-    return splited_docs
+    splitted_docs = character_splitter.split_documents(docs)
+    print(splitted_docs[0:2])
+    print(len(splitted_docs))
+    return splitted_docs
 
 
 if __name__ == "__main__":
