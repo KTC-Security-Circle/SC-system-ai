@@ -7,8 +7,12 @@ from langchain_community.vectorstores.azure_cosmos_db_no_sql import (
 from azure.cosmos import CosmosClient, PartitionKey
 from typing import List, Any, Dict
 import os
+import logging
 from dotenv import load_dotenv
 load_dotenv()
+
+# ロガーの設定
+logger = logging.getLogger(__name__)
 
 
 # policyの設定
@@ -74,6 +78,7 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
 
     def read_all_documents(self) -> List[Document]:
         """全てのdocumentsを読み込む関数"""
+        logger.info("全てのdocumentsを読み込みます")
         query = "SELECT c.id, c.text FROM c"
         items = list(self._container.query_items(
             query=query, enable_cross_partition_query=True))
@@ -85,11 +90,16 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             i += 1
             docs.append(
                 Document(page_content=text, metadata=item))
+        logger.debug(f"{docs[0].page_content=}, \n\nlength: {len(docs)}")
         return docs
 
 
 if __name__ == "__main__":
+    from sc_system_ai.logging_config import setup_logging
+    setup_logging()
+
     cosmos_manager = CosmosDBManager()
-    query = "What were the compute requirements for training GPT 4"
+    query = "京都テック"
     results = cosmos_manager.read_all_documents()
-    print(results[0])
+    # results = cosmos_manager.similarity_search(query)
+    print(results[0].page_content)
