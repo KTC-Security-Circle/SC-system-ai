@@ -17,6 +17,7 @@ if __name__ == "__main__":
 ```
 """
 import logging
+from langchain.globals import set_verbose
 
 
 def setup_logging():
@@ -37,4 +38,5 @@ def setup_logging():
     package_logger = logging.getLogger("sc_system_ai")
     package_logger.setLevel(logging.DEBUG)
 
-
+    # langchainのログメッセージを出力する
+    set_verbose(True)
