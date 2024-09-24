@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sc-system-ai"
-version = "0.0.2"
+version = "0.0.3"
 description = "A sample Python project"
 readme = "README.md"
 dependencies = [
@@ -15,6 +15,10 @@ dependencies = [
     "langsmith",
     "langgraph",
     "duckduckgo-search",
+    "azure-cosmos",
+    "pypdf",
+    "beautifulsoup4",
+    "lxml",
 ]
 
 [tool.setuptools.packages.find]
