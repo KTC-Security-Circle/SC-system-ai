@@ -26,23 +26,30 @@ class Output(BaseModel):
     ]
     similarity_score: float = Field(ge=0.0, le=1.0)
 
-def keyword_similarity(keyword: str, check_list: list[str]) -> str:
+def keyword_similarity(
+        sentence: str,
+        keywords: list[str],
+        llm = llm
+    ) -> str:
     requiremments_prompt = f"""文章と単語のリストを与えます。
     条件に従いリストの中から文章に最も関連性が高い単語と類似度を教えてください。
 
     文章:
-    {keyword}
+    {sentence}
 
     リスト:
-    [{",".join(check_list)}]
+    [{",".join(keywords)}]
     """
-    model = llm.with_structured_output(Output)
-    result = model.invoke(requiremments_prompt)
+    llm = llm.with_structured_output(Output)
+    result = llm.invoke(requiremments_prompt)
     
     logger.debug(f"キーワード類似度の結果: {result}")
     return result.word if result.similarity_score > 0.5 else ""
 
-def classify_role_similarity(user_input: str, role_list: list[str]) -> str:
+def classify_role_similarity(
+        user_input: str,
+        role_list: list[str]
+    ) -> str:
     similarity_word = keyword_similarity(user_input, role_list)
 
     for check_role in role_list:
