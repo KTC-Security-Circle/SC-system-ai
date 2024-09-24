@@ -57,7 +57,6 @@ class CallingAgent(BaseTool):
             user_input: str,
         ) -> str:
         logger.info(f"Calling Agent Toolが次の値で呼び出されました: {user_input}")
-        logger.debug(f"Calling Agent Toolが次の値で呼び出されました: {user_input}")
 
         # エージェントの呼び出し
         try:
@@ -66,7 +65,6 @@ class CallingAgent(BaseTool):
             logger.error(f"エージェントの呼び出しに失敗しました: {e}")
             raise e
         else:
-            logger.info(f"エージェントの呼び出しに成功しました: {self.agent}")
             logger.debug(f"エージェントの呼び出しに成功しました: {self.agent}")
 
         resp = agent.invoke(user_input)
