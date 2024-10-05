@@ -16,7 +16,7 @@ class Chat:
         self.user = User(name=user_name, major=user_major)
         self.user.conversations.add_conversations_list(conversation)
 
-    def chat(
+    def invoke(
         self,
         message: str,
         command: AGENT = "classify"
@@ -81,4 +81,4 @@ if __name__ == "__main__":
     )
     
     message = "私の名前と専攻は何ですか？"
-    resp = chat.chat(message)
+    resp = chat.invoke(message)
