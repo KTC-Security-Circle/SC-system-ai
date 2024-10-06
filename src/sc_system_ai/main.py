@@ -1,4 +1,5 @@
 from typing import Type, Literal
+from importlib import import_module
 
 from sc_system_ai.template.ai_settings import llm
 from sc_system_ai.template.agent import Agent
@@ -26,18 +27,14 @@ class Chat:
         return resp["output"] if type(resp) is dict else resp
 
     def _call_agent(self, command: AGENT) -> Type[Agent]:
-        agent = None
-        match command:
-            case "classify":
-                from sc_system_ai.agents.classify_agent import ClassifyAgent
-                agent = ClassifyAgent
-            case "dummy":
-                from sc_system_ai.agents.official_absence_agent import DummyAgent
-                agent = DummyAgent
-            case _:
-                raise ValueError(f"エージェントが見つかりません: {command}")
-            
-        return agent(llm=llm, user_info=self.user)
+        try:  
+            module_name = f"sc_system_ai.agents.{command}_agent"  
+            class_name = f"{command.capitalize()}Agent"  
+            module = import_module(module_name)  
+            agent_class = getattr(module, class_name)  
+            return agent_class(llm=llm, user_info=self.user)  
+        except (ModuleNotFoundError, AttributeError):  
+            raise ValueError(f"エージェントが見つかりません: {command}")  
     
     
 
@@ -81,4 +78,4 @@ if __name__ == "__main__":
     )
     
     message = "私の名前と専攻は何ですか？"
-    resp = chat.invoke(message)
+    resp = chat.invoke(message=message, command="dummy")
