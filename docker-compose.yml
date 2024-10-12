@@ -9,5 +9,4 @@ services:
         - GROUP_ID=1000
     volumes:
       - .:/app
-      - /app/.venv
     command: sleep infinity

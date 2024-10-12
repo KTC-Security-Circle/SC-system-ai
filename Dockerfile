@@ -30,12 +30,6 @@ WORKDIR /app
 # poetryのインストール
 RUN pip install --upgrade pip && pip install poetry 
 ENV PATH="/home/appuser/.local/bin:$PATH"
-ENV POETRY_VIRTUALENVS_IN_PROJECT=true
-
-COPY --chown=appuser:appgroup pyproject.toml poetry.lock ./
-RUN poetry install \
-    && poetry export -f requirements.txt -o requirements.txt --without-hashes
-
 
 # アプリケーションコードをコピー
 COPY --chown=appuser:appgroup . /app

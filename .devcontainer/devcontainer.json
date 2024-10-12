@@ -12,5 +12,7 @@
       },
       "extensions": ["ms-python.python", "GitHub.copilot"]
     }
-  }
+  },
+  "postCreateCommand": "chmod +x .devcontainer/post-attach.sh",
+  "postAttachCommand": ".devcontainer/post-attach.sh"
 }
