@@ -1,7 +1,7 @@
 import logging
 
 from typing import Type
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from langchain_core.tools import BaseTool
 
 from sc_system_ai.template.user_prompts import User
@@ -39,6 +39,10 @@ class CallingAgent(BaseTool):
     ```
     """
 
+    model_config = ConfigDict(
+        validate_assignment=True # 再代入時の型チェックを有効
+    )
+
     name: str = "calling_agent"
     description: str = "エージェントを呼び出すツール"
     args_schema: Type[BaseModel] = CallingAgentInput
@@ -49,9 +53,6 @@ class CallingAgent(BaseTool):
 
     def __init__(self) -> None:
         super().__init__()
-
-    class Config:
-        validate_assignment = True # 再代入時の型チェックを有効
 
     def _run(
             self,
