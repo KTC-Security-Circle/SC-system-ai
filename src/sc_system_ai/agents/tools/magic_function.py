@@ -14,8 +14,8 @@ class MagicFunctionInput(BaseModel):
 
 
 class MagicFunctionTool(BaseTool):
-    name = "magic_function_tool"
-    description = "Applies a magic function to an input."
+    name: str = "magic_function_tool"
+    description: str = "Applies a magic function to an input."
     args_schema: Type[BaseModel] = MagicFunctionInput
 
     def _run(

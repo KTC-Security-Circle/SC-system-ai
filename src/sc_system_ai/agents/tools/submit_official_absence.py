@@ -48,8 +48,8 @@ class SubmitOfficialAbsenceInput(BaseModel):
     reason: str = Field(description="欠席理由")
 
 class SubmitOfficialAbsence(BaseTool):
-    name = "submit_official_absence"
-    description = "公欠届を提出するツール"
+    name: str = "submit_official_absence"
+    description: str = "公欠届を提出するツール"
     args_schema: Type[BaseModel] = SubmitOfficialAbsenceInput
 
     def _run(

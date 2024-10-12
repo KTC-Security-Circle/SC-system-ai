@@ -41,8 +41,8 @@ class SearchSchoolDataInput(BaseModel):
 
 
 class SearchSchoolDataTool(BaseTool):
-    name = "search_school_data_tool"
-    description = "学校に関する情報を検索するためのツール"
+    name: str = "search_school_data_tool"
+    description: str = "学校に関する情報を検索するためのツール"
     args_schema: Type[BaseModel] = SearchSchoolDataInput
 
     def _run(

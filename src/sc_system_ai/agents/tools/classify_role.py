@@ -88,8 +88,8 @@ class ClassifyRoleInput(BaseModel):
     user_input: str = Field(description="ユーザー入力")
     
 class ClassifyRoleTool(BaseTool):
-    name = "classify_role_tool"
-    description = "ユーザーの入力から役割を分類する"
+    name: str = "classify_role_tool"
+    description: str = "ユーザーの入力から役割を分類する"
     args_schema: Type[BaseModel] = ClassifyRoleInput
 
     role_data: dict[str, list[str]] = Field(
