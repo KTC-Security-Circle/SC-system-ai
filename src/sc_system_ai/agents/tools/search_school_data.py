@@ -1,7 +1,7 @@
 from langchain_core.documents import Document
 from langchain_community.retrievers import AzureAISearchRetriever
 from langchain_core.tools import BaseTool
-from langchain.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from typing import Type, List
 import logging
 import os

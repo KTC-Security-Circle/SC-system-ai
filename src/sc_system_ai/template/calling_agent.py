@@ -1,7 +1,7 @@
 import logging
 
 from typing import Type
-from langchain.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool
 
 from sc_system_ai.template.user_prompts import User
