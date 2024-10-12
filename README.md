@@ -39,26 +39,39 @@ pip install git+https://github.com/KTC-Security-Circle/SC-system-ai.git
         もし権限がないなどのエラーが発生した場合、ssh鍵を登録する必要があるため、次のサイトを参考に登録を行う | [参考サイト](https://qiita.com/shizuma/items/2b2f873a0034839e47ce)
 
 2. Pythonの仮想環境を構築する
-    
-    今回は3.10系で開発するため、バージョンを指定している
 
-    もしバージョンを持っていない場合は別途インストールしてください
+    このリポジトリは以下の環境で開発することを想定しています。
+    - Dockerを使用できる環境
+    - Visual Studio Codeを使用できる環境
+
+    開発環境例は以下の通りです。
+    - Windows 11
+    - WSL2
+    - Docker Desktop
+    - Visual Studio Code
+
+    今回は3.10系で開発するため、`.devcontainer/devcontainer.json`と`pyproject.toml`にバージョンを指定しています。
+    もしバージョンを持っていない場合は別途インストールしてください。
+
+    Devcontainerを起動します。
 
     ```bash
-    py -3.10 -m venv .venv
+    cd SC-system-ai
+    code .
     ```
 
-    仮想環境にpip install する
+    VS Codeが開いたら、左下の緑色のアイコンをクリックして"Reopen in Container"を選択します。
 
-    ```bash
-    .\.venv\Scripts\activate
-    pip install -r requirements.txt
-    ```
+    正しく環境が構築されると、`poetry install`が実行され、.venvとrequirements.txtが生成されます。
+    自動的にインタプリタが設定されるはずなので、そのまま開発ができるようになっています。
+    > **※** 初めてDevcontainerを起動するときは、Dockerイメージのビルドが行われるため、時間がかかることがあります。
+    git コマンドに関して使用できるようにしていますが、ssh鍵の設定が必要な場合があります。
+    推奨事項としてはコンテナ外からgitコマンドを使用することをお勧めします.
 
 3. 環境変数を設定する
-   
+
    `.env.sample`ファイルをコピーし、[docs/env.md](docs/env.md)で確認しながら設定を行う
 
 4. 開発を始める
-   
+
    [開発者向けドキュメント](docs/developer.md)から始めてください。
