@@ -1,0 +1,16 @@
+{
+  "name": "sc-system-ai-dev",
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "app",
+  "workspaceFolder": "/app",
+  
+  "remoteUser": "appuser",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash"
+      },
+      "extensions": ["ms-python.python", "GitHub.copilot"]
+    }
+  }
+}
