@@ -42,7 +42,7 @@ class CallingAgent(BaseTool):
     name: str = "calling_agent"
     description: str = "エージェントを呼び出すツール"
     args_schema: Type[BaseModel] = CallingAgentInput
-    return_direct: str = True
+    return_direct: bool = True
 
     user_info: User = Field(description="ユーザー情報", default=User())
     agent: Type[Agent] = Agent
