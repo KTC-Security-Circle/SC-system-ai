@@ -127,10 +127,10 @@ if __name__ == "__main__":
     tools = [magic_function]
     agent = Agent(
         user_info=user_info,
-        assistant_info="あなたは優秀な校正者です。", 
-        tools=tools, 
         llm=llm
     )
+    agent.assistant_info = "あなたは優秀な校正者です。"
+    agent.set_tools(tools)
     
     result = agent.invoke("magic function に３")
     print(result)

@@ -4,7 +4,7 @@ import logging
 
 from sc_system_ai.template.user_prompts import User
 from sc_system_ai.template.calling_agent import CallingAgent
-from sc_system_ai.agents.official_absence_agent import DummyAgent
+from sc_system_ai.agents.dummy_agent import DummyAgent
 
 logger = logging.getLogger(__name__)
 

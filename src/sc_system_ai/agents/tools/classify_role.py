@@ -1,7 +1,7 @@
 import logging
 
 from typing import Type, Literal
-from langchain.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool
 
 from sc_system_ai.template.ai_settings import llm
@@ -88,8 +88,8 @@ class ClassifyRoleInput(BaseModel):
     user_input: str = Field(description="ユーザー入力")
     
 class ClassifyRoleTool(BaseTool):
-    name = "classify_role_tool"
-    description = "ユーザーの入力から役割を分類する"
+    name: str = "classify_role_tool"
+    description: str = "ユーザーの入力から役割を分類する"
     args_schema: Type[BaseModel] = ClassifyRoleInput
 
     role_data: dict[str, list[str]] = Field(

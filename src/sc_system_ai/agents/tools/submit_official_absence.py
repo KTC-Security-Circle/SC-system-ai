@@ -3,7 +3,7 @@
 import logging
 
 from typing import Type
-from langchain.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool
 from langchain_core.output_parsers import StrOutputParser
 
@@ -48,8 +48,8 @@ class SubmitOfficialAbsenceInput(BaseModel):
     reason: str = Field(description="欠席理由")
 
 class SubmitOfficialAbsence(BaseTool):
-    name = "submit_official_absence"
-    description = "公欠届を提出するツール"
+    name: str = "submit_official_absence"
+    description: str = "公欠届を提出するツール"
     args_schema: Type[BaseModel] = SubmitOfficialAbsenceInput
 
     def _run(
@@ -69,4 +69,3 @@ class SubmitOfficialAbsence(BaseTool):
         return result
     
 submit_official_absence = SubmitOfficialAbsence()
-        
