@@ -1,25 +1,30 @@
-[build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
+[tool.poetry]
 name = "sc-system-ai"
-version = "0.0.3"
-description = "A sample Python project"
+version = "0.1.0"
+description = "Package for handling LLM in sc-system."
+authors = ["Your Name <you@example.com>"]
 readme = "README.md"
-dependencies = [
-    "python-dotenv",
-    "langchain",
-    "langchain-community",
-    "langchain-openai",
-    "langsmith",
-    "langgraph",
-    "duckduckgo-search",
-    "azure-cosmos",
-    "pypdf",
-    "beautifulsoup4",
-    "lxml",
-]
+packages = [{include = "sc_system_ai", from = "src"}]
 
-[tool.setuptools.packages.find]
-where = ["src"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+langchain = "^0.3.3"
+langchain-community = "^0.3.2"
+langchain-openai = "^0.2.2"
+duckduckgo-search = "^6.3.0"
+azure-cosmos = "^4.7.0"
+
+
+[tool.poetry.group.dev.dependencies]
+langsmith = "^0.1.134"
+langgraph = "^0.2.35"
+pypdf = "^5.0.1"
+beautifulsoup4 = "^4.12.3"
+lxml = "^5.3.0"
+ruff = "^0.6.9"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
