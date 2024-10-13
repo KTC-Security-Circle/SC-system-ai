@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sc-system-ai"
+version = "0.0.3"
+description = "A sample Python project"
+readme = "README.md"
+dependencies = [
+    "python-dotenv",
+    "langchain",
+    "langchain-community",
+    "langchain-openai",
+    "langsmith",
+    "langgraph",
+    "duckduckgo-search",
+    "azure-cosmos",
+    "pypdf",
+    "beautifulsoup4",
+    "lxml",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

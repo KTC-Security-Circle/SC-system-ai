@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - USER_ID=1000
+        - GROUP_ID=1000
+    volumes:
+      - .:/app
+    command: sleep infinity
