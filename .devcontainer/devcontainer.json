@@ -8,9 +8,24 @@
   "customizations": {
     "vscode": {
       "settings": {
-        "terminal.integrated.shell.linux": "/bin/bash"
+        "terminal.integrated.shell.linux": "/bin/bash",
+        "editor.renderWhitespace": "all",
+        "python.defaultInterpreterPath": ".venv/bin/python",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+          }
+        }
       },
-      "extensions": ["ms-python.python", "GitHub.copilot"]
+      "extensions": [
+        "ms-python.python",
+        "GitHub.copilot",
+        "charliermarsh.ruff",
+        "esbenp.prettier-vscode"
+      ]
     }
   },
   "postCreateCommand": "chmod +x .devcontainer/post-attach.sh",
