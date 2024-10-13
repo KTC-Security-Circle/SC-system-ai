@@ -1,7 +1,7 @@
 from langchain_core.documents import Document
 from langchain_community.retrievers import AzureAISearchRetriever
 from langchain_core.tools import BaseTool
-from langchain.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from typing import Type, List
 import logging
 import os
@@ -41,8 +41,8 @@ class SearchSchoolDataInput(BaseModel):
 
 
 class SearchSchoolDataTool(BaseTool):
-    name = "search_school_data_tool"
-    description = "学校に関する情報を検索するためのツール"
+    name: str = "search_school_data_tool"
+    description: str = "学校に関する情報を検索するためのツール"
     args_schema: Type[BaseModel] = SearchSchoolDataInput
 
     def _run(
