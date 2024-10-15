@@ -17,7 +17,7 @@ azure-cosmos = "^4.7.0"
 
 
 [tool.poetry.group.dev.dependencies]
-langsmith = "^0.1.134"
+langsmith = "^0.1.135"
 langgraph = "^0.2.35"
 pypdf = "^5.0.1"
 beautifulsoup4 = "^4.12.3"
