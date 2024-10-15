@@ -1,7 +1,6 @@
-name: Create GitHub Release
+name: Create Release Tag and Notes
 
 on:
-  workflow_dispatch:
   pull_request:
     types:
       - closed
@@ -35,25 +34,28 @@ jobs:
         LAST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
         echo "LAST_TAG=$LAST_TAG" >> $GITHUB_ENV
 
-    - name: Get pull requests with specific label since last release
-      id: pr_with_label
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Get current version
+      id: current_version
       run: |
-        PRS=$(gh pr list --label "bug" --label "documentation" --label "enhancement" --label "fix" --state merged --search "merged:>${{ steps.last_release.outputs.tag }}" --json title,url --jq '.[] | "- [\(.title)](\(.url))"')
-        echo "PRS=$PRS" >> $GITHUB_ENV
+        RELEASE_TAG=$(poetry version --short)
+        echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
 
-    - name: Create GitHub Release
+      - name: Generate release note
+        id: release_note
+        run: |
+          RELEASE_NOTE=$(curl -X POST -H 'Accept: application/vnd.github.v3+json' -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' https://api.github.com/repos/${{ github.repository }}/releases/generate-notes -d '{"tag_name":"${{ env.LAST_TAG }}", "previous_tag_name":"${{ env.RELEASE_TAG }}"}' | jq .body | sed 's/"//g')
+          echo "RELEASE_NOTE=$RELEASE_NOTE" >> $GITHUB_ENV
+
+    - name: Create Release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: v$(poetry version --short)
-        release_name: Release $(poetry version --short)
+        tag_name: v${{ env.RELEASE_TAG }}
+        release_name: Release ${{ env.RELEASE_TAG }}
         draft: false
         prerelease: false
         body: |
-          Release notes for version $(poetry version --short)
+          Release notes for version ${{ env.RELEASE_TAG }}
           
-          Changes:
-          ${{ env.PRS }}
+          ${{ env.RELEASE_NOTE }}
