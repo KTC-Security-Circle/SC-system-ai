@@ -53,24 +53,24 @@ jobs:
         git push -u origin release-updates
         git status
 
-    - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v5
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        branch: release-updates
-        base: main
-        title: "Release Updates"
-        body: "This PR contains version bump and release updates."
+    # - name: Create Pull Request
+    #   uses: peter-evans/create-pull-request@v5
+    #   with:
+    #     token: ${{ secrets.GITHUB_TOKEN }}
+    #     branch: release-updates
+    #     base: main
+    #     title: "Release Updates"
+    #     body: "This PR contains version bump and release updates."
         
-    - name: Create GitHub Release
-      if: github.ref == 'refs/heads/release-updates'
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v$(poetry version --short)
-        release_name: Release $(poetry version --short)
-        draft: false
-        prerelease: false
-        body: |
-          Release notes for version $(poetry version --short)
+    # - name: Create GitHub Release
+    #   if: github.ref == 'refs/heads/release-updates'
+    #   uses: actions/create-release@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     tag_name: v$(poetry version --short)
+    #     release_name: Release $(poetry version --short)
+    #     draft: false
+    #     prerelease: false
+    #     body: |
+    #       Release notes for version $(poetry version --short)
