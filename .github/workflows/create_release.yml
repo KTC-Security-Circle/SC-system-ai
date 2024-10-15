@@ -44,7 +44,7 @@ jobs:
       id: release_note
       run: |
           RELEASE_NOTE=$(curl -X POST -H 'Accept: application/vnd.github.v3+json' -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' https://api.github.com/repos/${{ github.repository }}/releases/generate-notes -d '{"tag_name":"${{ env.RELEASE_TAG }}", "previous_tag_name":"${{ env.LAST_TAG }}"}' | jq .body | sed 's/"//g')
-          echo "RELEASE_NOTE=$RELEASE_NOTE" >> $GITHUB_ENV
+          echo -e "$RELEASE_NOTE" > release_note.txt
 
     - name: Create Release
       uses: actions/create-release@v1
@@ -55,7 +55,4 @@ jobs:
         release_name: Release ${{ env.RELEASE_TAG }}
         draft: false
         prerelease: false
-        body: |
-          Release notes for version ${{ env.RELEASE_TAG }}
-          
-          ${{ env.RELEASE_NOTE }}
+        body_path: release_note.txt
