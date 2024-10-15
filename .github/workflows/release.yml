@@ -3,6 +3,8 @@ name: Release workflow [minor]
 on:
   workflow_dispatch:
 
+permissions: read-all
+
 jobs:
   release:
     runs-on: ubuntu-latest
