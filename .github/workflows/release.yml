@@ -3,7 +3,7 @@ name: Release workflow [minor]
 on:
   workflow_dispatch:
 
-permissions: read-all
+permissions: white-all
 
 jobs:
   release:
@@ -40,14 +40,17 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         git checkout -b release-updates
-        git push origin release-updates
+        git push -u origin release-updates
 
     - name: Create Pull Request
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        gh pr create --title "Release Updates" --body "This PR contains version bump and release updates." --base main --head release-updates
-
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        branch: release-updates
+        base: main
+        title: "Release Updates"
+        body: "This PR contains version bump and release updates."
+        
     - name: Create GitHub Release
       if: github.ref == 'refs/heads/release-updates'
       uses: actions/create-release@v1
