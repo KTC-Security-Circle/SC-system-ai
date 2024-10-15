@@ -36,6 +36,8 @@ jobs:
       run: |
         poetry version minor
         git add pyproject.toml
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
         git commit -m "Bump version to $(poetry version --short)"
 
     - name: Push changes back to GitHub
