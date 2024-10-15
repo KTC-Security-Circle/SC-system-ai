@@ -28,10 +28,12 @@ jobs:
       run: |
         # Update the version number automatically (minor version bump as an example)
         poetry version minor
+        # Stage the version bump
+        git add pyproject.toml
         # Commit the version bump
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
-        git commit -am "Bump version to $(poetry version --short)"
+        git commit -m "Bump version to $(poetry version --short)"
 
     - name: Push changes back to GitHub
       env:
