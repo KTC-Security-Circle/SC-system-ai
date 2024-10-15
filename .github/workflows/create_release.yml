@@ -1,0 +1,58 @@
+name: Create GitHub Release
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  create_release:
+    if: github.event.pull_request.merged == true && (github.event.pull_request.head.ref == 'release-updates-minor' || github.event.pull_request.head.ref == 'release-updates-major')
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Get last release tag
+      id: last_release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        LAST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+        echo "::set-output name=tag::$LAST_TAG"
+
+    - name: Get pull requests with specific label since last release
+      id: pr_with_label
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        PRS=$(gh pr list --label "release-note" --state merged --search "merged:>${{ steps.last_release.outputs.tag }}" --json title,url --jq '.[] | "- [\(.title)](\(.url))"')
+        echo "::set-output name=prs::$PRS"
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v$(poetry version --short)
+        release_name: Release $(poetry version --short)
+        draft: false
+        prerelease: false
+        body: |
+          Release notes for version $(poetry version --short)
+          
+          Changes:
+          ${{ steps.pr_with_label.outputs.prs }}
