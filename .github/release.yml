@@ -2,7 +2,9 @@ changelog:
   exclude:
     # リリースノートから除外したいユーザー
     authors:
-      - github-actions # <-- 追加
+      - github-actions
+    exclude_labels:
+      - "chore"
   categories:
     - title: New Features 🎉
       labels:
@@ -16,3 +18,8 @@ changelog:
     - title: Other Changes 📝
       labels:
         - "*"
+  template: |
+    ## Changes in this release 🚀
+
+    $CHANGES
+    
