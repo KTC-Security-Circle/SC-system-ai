@@ -39,7 +39,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        PRS=$(gh pr list --label "release-note" --state merged --search "merged:>${{ steps.last_release.outputs.tag }}" --json title,url --jq '.[] | "- [\(.title)](\(.url))"')
+        PRS=$(gh pr list --label "bug,documentation,enhancement,fix" --any --state merged --search "merged:>${{ steps.last_release.outputs.tag }}" --json title,url --jq '.[] | "- [\(.title)](\(.url))"')
         echo "::set-output name=prs::$PRS"
 
     - name: Create GitHub Release
