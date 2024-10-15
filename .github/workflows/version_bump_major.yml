@@ -5,10 +5,27 @@ on:
 
 jobs:
   release:
-    uses: ./.github/workflows/shared_version_bump.yml  # 共通部分をインクルード
     runs-on: ubuntu-latest
 
     steps:
+    - name: Checkout the code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: poetry install
+
     - name: Create new branch for updates
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
