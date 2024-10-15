@@ -1,6 +1,7 @@
 name: Create GitHub Release
 
 on:
+  workflow_dispatch:
   pull_request:
     types:
       - closed
@@ -32,15 +33,15 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         LAST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
-        echo "::set-output name=tag::$LAST_TAG"
+        echo "LAST_TAG=$LAST_TAG" >> $GITHUB_ENV
 
     - name: Get pull requests with specific label since last release
       id: pr_with_label
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        PRS=$(gh pr list --label "bug,documentation,enhancement,fix" --any --state merged --search "merged:>${{ steps.last_release.outputs.tag }}" --json title,url --jq '.[] | "- [\(.title)](\(.url))"')
-        echo "::set-output name=prs::$PRS"
+        PRS=$(gh pr list --label "bug" --label "documentation" --label "enhancement" --label "fix" --state merged --search "merged:>${{ steps.last_release.outputs.tag }}" --json title,url --jq '.[] | "- [\(.title)](\(.url))"')
+        echo "PRS=$PRS" >> $GITHUB_ENV
 
     - name: Create GitHub Release
       uses: actions/create-release@v1
@@ -55,4 +56,4 @@ jobs:
           Release notes for version $(poetry version --short)
           
           Changes:
-          ${{ steps.pr_with_label.outputs.prs }}
+          ${{ env.PRS }}
