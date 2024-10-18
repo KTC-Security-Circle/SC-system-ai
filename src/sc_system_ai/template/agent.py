@@ -235,7 +235,6 @@ if __name__ == "__main__":
     # result = agent.invoke("magic function に３")
     # print(result)
 
-    agent.get_response()
     for output in agent.invoke("magic function に３"):
         print(output)
-    agent.get_response()
+    print(agent.get_response())
