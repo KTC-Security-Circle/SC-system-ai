@@ -1,5 +1,6 @@
 from queue import Queue
 from threading import Thread
+from langchain_openai import AzureChatOpenAI
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 
 from sc_system_ai.template.ai_settings import llm
@@ -18,9 +19,9 @@ logger = logging.getLogger(__name__)
 class StreamingAgent(MainAgent):
     def __init__(
         self,
-        llm=llm,
-        user_info=User(),
-        return_length=5
+        llm: AzureChatOpenAI=llm,
+        user_info: User=User(),
+        return_length: int=5
     ):
         super().__init__(llm=llm, user_info=user_info)
         self.queue = Queue()
