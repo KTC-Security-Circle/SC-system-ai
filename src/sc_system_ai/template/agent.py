@@ -63,6 +63,11 @@ class Agent:
 
         self.is_streaming = is_streaming
 
+        # assistant_infoとtoolsは各エージェントで設定する
+        self.assistant_info = None
+        self.tools = []
+        self.set_tools(template_tools)
+
         # ストリーミングの設定
         if self.is_streaming:
             self.queue = Queue()
@@ -72,9 +77,6 @@ class Agent:
 
         self._create_invoke()
 
-        # assistant_infoとtoolsは各エージェントで設定する
-        self.assistant_info = None
-        self.tools = template_tools
 
         self.prompt_template = PromptTemplate(assistant_info=self.assistant_info, user_info=self.user_info)
 
