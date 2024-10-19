@@ -75,7 +75,7 @@ class Agent:
         self.tools = []
         
         self.set_tools(template_tools)
-        self._create_invoke()
+        # self._create_invoke()
 
         self.prompt_template = PromptTemplate(assistant_info=self.assistant_info, user_info=self.user_info)
 
@@ -121,17 +121,20 @@ class Agent:
         resp = agent.invoke("user message")
         ```
         """
-        pass
-
-    def _create_invoke(self) -> None:
-        if self.is_streaming:
-            def invoke(self, message: str):
-                yield from self._streaming_invoke(message)
+        if not self.is_streaming:
+            return self._direct_invoke(message)
         else:
-            def invoke(self, message: str):
-                self._invoke(message)
-                return self.result
-        setattr(self.__class__, "invoke", invoke)
+            yield from self._streaming_invoke(message)
+
+    # def _create_invoke(self) -> None:
+    #     if self.is_streaming:
+    #         def invoke(self, message: str):
+    #             yield self._streaming_invoke(message)
+    #     else:
+    #         def invoke(self, message: str):
+    #             self._invoke(message)
+    #             return self.result
+    #     setattr(self.__class__, "invoke", invoke)
 
     def _setup_invoke(self):
         agent = create_tool_calling_agent(
@@ -184,6 +187,10 @@ class Agent:
             if thread and thread.is_alive():
                 thread.join()
 
+    def _direct_invoke(self, message: str):
+        self._invoke(message)
+        return self.result
+
     def get_response(self):
         """エージェントのレスポンスを取得する関数"""
         try:
@@ -233,7 +240,8 @@ if __name__ == "__main__":
     tools = [magic_function]
     agent = Agent(
         user_info=user_info,
-        llm=llm
+        llm=llm,
+        is_streaming=True
     )
     agent.assistant_info = "あなたは優秀な校正者です。"
     agent.set_tools(tools)
