@@ -75,7 +75,6 @@ class Agent:
         self.tools = []
         
         self.set_tools(template_tools)
-        # self._create_invoke()
 
         self.prompt_template = PromptTemplate(assistant_info=self.assistant_info, user_info=self.user_info)
 
@@ -118,25 +117,9 @@ class Agent:
 
         is_streamingがFalseの場合は、エージェントのレスポンスを取得後、返却します
         ```python
-        resp = agent.invoke("user message")
+        resp = next(agent.invoke("user message"))
         ```
         """
-        if not self.is_streaming:
-            return self._direct_invoke(message)
-        else:
-            yield from self._streaming_invoke(message)
-
-    # def _create_invoke(self) -> None:
-    #     if self.is_streaming:
-    #         def invoke(self, message: str):
-    #             yield self._streaming_invoke(message)
-    #     else:
-    #         def invoke(self, message: str):
-    #             self._invoke(message)
-    #             return self.result
-    #     setattr(self.__class__, "invoke", invoke)
-
-    def _setup_invoke(self):
         agent = create_tool_calling_agent(
             llm=self.llm,
             tools=self.tools,
@@ -148,9 +131,14 @@ class Agent:
             callbacks= [self.handler] if self.is_streaming else None
         )
         self.result = ""
+
+        if not self.is_streaming:
+            self._invoke(message)
+            yield self.result
+        else:
+            yield from self._streaming_invoke(message)
     
     def _invoke(self, message: str):
-        self._setup_invoke()
         try: # エージェントの実行
             logger.info("エージェントの実行を開始します。\n-------------------\n")
             logger.debug(f"最終的なプロンプト: {self.prompt_template.full_prompt.messages}")
@@ -163,7 +151,6 @@ class Agent:
             self.result = "エージェントの実行に失敗しました。"
     
     def _streaming_invoke(self, message: str):
-        self._setup_invoke()
         phrase = ""
         thread = Thread(target=self._invoke, args=(message,))
 
@@ -186,10 +173,6 @@ class Agent:
             #クリーンアップ
             if thread and thread.is_alive():
                 thread.join()
-
-    def _direct_invoke(self, message: str):
-        self._invoke(message)
-        return self.result
 
     def get_response(self):
         """エージェントのレスポンスを取得する関数"""
@@ -241,14 +224,14 @@ if __name__ == "__main__":
     agent = Agent(
         user_info=user_info,
         llm=llm,
-        is_streaming=True
+        is_streaming=False
     )
     agent.assistant_info = "あなたは優秀な校正者です。"
     agent.set_tools(tools)
     
-    # result = agent.invoke("magic function に３")
-    # print(result)
+    result = next(agent.invoke("magic function に３"))
+    print(result)
 
-    for output in agent.invoke("magic function に３"):
-        print(output)
-    print(agent.get_response())
+    # for output in agent.invoke("magic function に３"):
+    #     print(output)
+    # print(agent.get_response())

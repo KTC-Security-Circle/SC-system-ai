@@ -17,6 +17,7 @@ class StreamingAgentHandler(BaseCallbackHandler):
     # トークンの生成時に呼び出される関数
     def on_llm_new_token(self, token, **kwargs):
         if token:
+            logger.debug(token)
             self.queue.put(token)
 
     # トークン生成時にエラーが発生した場合呼び出される関数
