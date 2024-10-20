@@ -9,7 +9,7 @@ Agentの基底クラスを作成します。このクラスは、エージェン
 import logging
 from queue import Queue
 from threading import Thread
-from typing import Type
+from typing import Type, Iterator
 
 from langchain_openai import AzureChatOpenAI
 from langchain.agents import create_tool_calling_agent, AgentExecutor
@@ -61,40 +61,73 @@ class Agent:
         self.llm = llm
         self.user_info = user_info
 
-        self.is_streaming = is_streaming
-
-        # ストリーミングの設定
-        if self.is_streaming:
-            self.queue = Queue()
-            self.handler = StreamingAgentHandler(self.queue)
-            self._streaming_agent_setup()
-            self.return_length = return_length
+        self._is_streaming = is_streaming
+        self._return_length = return_length
         
         # assistant_infoとtoolsは各エージェントで設定する
         self.assistant_info = None
-        self.tools = []
-        
-        self.set_tools(template_tools)
+        self.tools = template_tools
 
         self.prompt_template = PromptTemplate(assistant_info=self.assistant_info, user_info=self.user_info)
 
+        if self._is_streaming:
+            self.setup_streaming()
+
         self.get_agent_info()
+
+    @property
+    def is_streaming(self):
+        return self._is_streaming
+    
+    @is_streaming.setter
+    def is_streaming(self, is_streaming: bool):
+        self._is_streaming = is_streaming
+
+        if self._is_streaming:
+            self.setup_streaming()
+        else:
+            self.setup_static()
+
+    @property
+    def return_length(self):
+        return self._return_length
+
+    @return_length.setter
+    def return_length(self, return_length: int):
+        if return_length <= 0:
+            raise ValueError("return_lengthは1以上の整数である必要があります。")
+        self._return_length = return_length
+
+    def setup_streaming(self):
+        """ストリーミング時のセットアップを行う関数"""
+        self.queue = Queue()
+        self.handler = StreamingAgentHandler(self.queue)
+
+        # llmの設定
+        self.llm.streaming = True
+        self.llm.callbacks = [self.handler]
+
+        # ツールの設定
+        self.tools = self.streaming_tool_setup(self.tools)
+
+    def cancel_streaming(self):
+        """ストリーミング時のセットアップを解除する関数"""
+        self.llm.streaming = False
+        self.llm.callbacks = None
+
+        for tool in self.tools:
+            tool.callbacks = None
     
     def set_tools(self, tools: list[Type[BaseTool]]):
         """ツールを追加する関数"""
-        self.tools += self._streaming_tool_setup(tools) if self.is_streaming else tools
+        self.tools += self.streaming_tool_setup(tools) if self._is_streaming else tools
 
     def set_assistant_info(self, assistant_info: str):
         """アシスタント情報を設定する関数"""
         self.assistant_info = assistant_info
         self.prompt_template.create_prompt(assistant_info=self.assistant_info)
-    
-    def _streaming_agent_setup(self) -> None:
-        """エージェントのストリーミングのセットアップを行う関数"""
-        self.llm.streaming = True
-        self.llm.callbacks = [self.handler]
 
-    def _streaming_tool_setup(self, tools: list[Type[BaseTool]]) -> list[Type[BaseTool]]:
+    def streaming_tool_setup(self, tools: list[Type[BaseTool]]) -> list[Type[BaseTool]]:
         """ツールのストリーミングのセットアップを行う関数"""
         handler = StreamingToolHandler(self.queue)
         for tool in tools:
@@ -102,7 +135,7 @@ class Agent:
 
         return tools
     
-    def invoke(self, message: str):
+    def invoke(self, message: str) -> Iterator[str]:
         """
         エージェントを実行する関数
 
@@ -128,15 +161,15 @@ class Agent:
         self.agent_executor = AgentExecutor(
             agent=agent,
             tools=self.tools,
-            callbacks= [self.handler] if self.is_streaming else None
+            callbacks= [self.handler] if self._is_streaming else None
         )
         self.result = ""
 
-        if not self.is_streaming:
+        if self._is_streaming:
+            yield from self._streaming_invoke(message)
+        else:
             self._invoke(message)
             yield self.result
-        else:
-            yield from self._streaming_invoke(message)
     
     def _invoke(self, message: str):
         try: # エージェントの実行
@@ -162,7 +195,7 @@ class Agent:
                     break
 
                 phrase += token
-                if len(phrase) >= self.return_length:
+                if len(phrase) >= self._return_length:
                     yield phrase
                     phrase = ""
         except Exception as e:
@@ -232,6 +265,7 @@ if __name__ == "__main__":
     result = next(agent.invoke("magic function に３"))
     print(result)
 
-    # for output in agent.invoke("magic function に３"):
-    #     print(output)
-    # print(agent.get_response())
+    agent.is_streaming = True
+    for output in agent.invoke("magic function に３"):
+        print(output)
+    print(agent.get_response())
