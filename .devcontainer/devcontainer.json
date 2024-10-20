@@ -28,6 +28,6 @@
       ]
     }
   },
-  "postCreateCommand": "chmod +x .devcontainer/post-attach.sh",
-  "postAttachCommand": ".devcontainer/post-attach.sh"
+  "postCreateCommand": "chmod +x .devcontainer/scripts/*.sh && ./.devcontainer/scripts/post-create.sh",
+  "postAttachCommand": ".devcontainer/scripts/post-attach.sh"
 }
