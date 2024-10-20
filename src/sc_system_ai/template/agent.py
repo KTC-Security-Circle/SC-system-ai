@@ -27,6 +27,59 @@ from sc_system_ai.template.streaming_handler import (
 # ロガーの設定
 logger = logging.getLogger(__name__)
 
+# ToolManagerクラスの作成
+class ToolManager:
+    """
+    ツールを管理するクラス
+
+    Args:
+        tools (list[Type[BaseTool]], optional): ツールのリスト. Defaults to [].
+        is_streaming (bool, optional): ストリーミングの有無. Defaults to True.
+        queue (Queue, optional): キュー. Defaults to None.
+    """
+    def __init__(
+            self,
+            tools: list[Type[BaseTool]] = [],
+            is_streaming: bool = True,
+            queue: Queue = None,
+    ):
+        self.tools = tools
+        self._is_streaming = is_streaming
+        self.queue = queue
+
+    @property
+    def is_streaming(self):
+        return self._is_streaming
+    
+    @is_streaming.setter
+    def is_streaming(self, is_streaming: bool):
+        self._is_streaming = is_streaming
+
+        if self._is_streaming:
+            self.tools = self.setup_streaming(self.tools)
+        else:
+            self.cancel_streaming()
+
+    def setup_streaming(self, tools: list[Type[BaseTool]]) -> list[Type[BaseTool]]:
+        """ストリーミングのセットアップを行う関数"""
+        self.handler = StreamingToolHandler(self.queue)
+
+        for tool in tools:
+            tool.callbacks = [self.handler]
+
+        return tools
+
+    def cancel_streaming(self):
+        """ストリーミングのセットアップを解除する関数"""
+        for tool in self.tools:
+            tool.callbacks = None
+
+    def set_tools(self, tools: list[Type[BaseTool]]):
+        """ツールを追加する関数"""
+        self.tools += self.setup_streaming(tools) if self._is_streaming else tools
+
+
+
 # 全てのAgentに共通するツール
 template_tools = [search_duckduckgo]
 
@@ -63,10 +116,11 @@ class Agent:
 
         self._is_streaming = is_streaming
         self._return_length = return_length
+        self.queue = Queue()
         
         # assistant_infoとtoolsは各エージェントで設定する
         self.assistant_info = None
-        self.tools = template_tools
+        self.tool = ToolManager(tools=template_tools, is_streaming=self._is_streaming, queue=self.queue)
 
         self.prompt_template = PromptTemplate(assistant_info=self.assistant_info, user_info=self.user_info)
 
@@ -82,11 +136,12 @@ class Agent:
     @is_streaming.setter
     def is_streaming(self, is_streaming: bool):
         self._is_streaming = is_streaming
+        self.tool.is_streaming = is_streaming
 
         if self._is_streaming:
             self.setup_streaming()
         else:
-            self.setup_static()
+            self.cancel_streaming()
 
     @property
     def return_length(self):
@@ -100,40 +155,27 @@ class Agent:
 
     def setup_streaming(self):
         """ストリーミング時のセットアップを行う関数"""
-        self.queue = Queue()
+        self.clear_queue()
         self.handler = StreamingAgentHandler(self.queue)
 
         # llmの設定
         self.llm.streaming = True
         self.llm.callbacks = [self.handler]
 
-        # ツールの設定
-        self.tools = self.streaming_tool_setup(self.tools)
-
     def cancel_streaming(self):
         """ストリーミング時のセットアップを解除する関数"""
         self.llm.streaming = False
         self.llm.callbacks = None
 
-        for tool in self.tools:
-            tool.callbacks = None
-    
-    def set_tools(self, tools: list[Type[BaseTool]]):
-        """ツールを追加する関数"""
-        self.tools += self.streaming_tool_setup(tools) if self._is_streaming else tools
+    def clear_queue(self):
+        """キューをクリアする関数"""
+        while not self.queue.empty():
+            self.queue.get()
 
     def set_assistant_info(self, assistant_info: str):
         """アシスタント情報を設定する関数"""
         self.assistant_info = assistant_info
         self.prompt_template.create_prompt(assistant_info=self.assistant_info)
-
-    def streaming_tool_setup(self, tools: list[Type[BaseTool]]) -> list[Type[BaseTool]]:
-        """ツールのストリーミングのセットアップを行う関数"""
-        handler = StreamingToolHandler(self.queue)
-        for tool in tools:
-            tool.callbacks = [handler]
-
-        return tools
     
     def invoke(self, message: str) -> Iterator[str]:
         """
@@ -155,12 +197,12 @@ class Agent:
         """
         agent = create_tool_calling_agent(
             llm=self.llm,
-            tools=self.tools,
+            tools=self.tool.tools,
             prompt=self.prompt_template.full_prompt
         )
         self.agent_executor = AgentExecutor(
             agent=agent,
-            tools=self.tools,
+            tools=self.tool.tools,
             callbacks= [self.handler] if self._is_streaming else None
         )
         self.result = ""
@@ -221,7 +263,7 @@ class Agent:
         self.agent_info = agent_info.format(
             assistant_info=self.assistant_info,
             user_info=self.user_info,
-            tools=self.tools
+            tools=self.tool.tools
         )
         return self.agent_info
     
@@ -260,7 +302,7 @@ if __name__ == "__main__":
         is_streaming=False
     )
     agent.assistant_info = "あなたは優秀な校正者です。"
-    agent.set_tools(tools)
+    agent.tool.set_tools(tools)
     
     result = next(agent.invoke("magic function に３"))
     print(result)
