@@ -9,7 +9,7 @@ packages = [{include = "sc_system_ai", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-langchain = "^0.3.3"
+langchain = "^0.3.4"
 langchain-community = "^0.3.2"
 langchain-openai = "^0.2.3"
 duckduckgo-search = "^6.3.2"
@@ -18,7 +18,7 @@ azure-cosmos = "^4.7.0"
 
 [tool.poetry.group.dev.dependencies]
 langsmith = "^0.1.136"
-langgraph = "^0.2.38"
+langgraph = "^0.2.39"
 pypdf = "^5.0.1"
 beautifulsoup4 = "^4.12.3"
 lxml = "^5.3.0"
