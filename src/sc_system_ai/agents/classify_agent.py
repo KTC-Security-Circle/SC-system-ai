@@ -28,11 +28,15 @@ class ClassifyAgent(Agent):
     def __init__(
             self,
             llm: AzureChatOpenAI = llm,
-            user_info: User = User()
+            user_info: User = User(),
+            is_streaming: bool = True,
+            return_length: int = 5
     ):
         super().__init__(
             llm=llm,
-            user_info=user_info
+            user_info=user_info,
+            is_streaming=is_streaming,
+            return_length=return_length
         )
         self.assistant_info = classify_agent_info
         super().set_assistant_info(self.assistant_info)
@@ -44,7 +48,7 @@ class ClassifyAgent(Agent):
             if isinstance(tool, CallingAgent):
                 tool.set_user_info(self.user_info)
         
-        super().set_tools(tools)
+        self.tool.set_tools(tools)
 
 if __name__ == "__main__":
     from sc_system_ai.logging_config import setup_logging
@@ -69,12 +73,18 @@ if __name__ == "__main__":
         if user == "exit":
             break
 
-        resp = classify_agent.invoke(user)
+        # 通常の呼び出し
+        # resp = classify_agent.invoke(user)
+        # print(resp)
+
+        # ストリーミング呼び出し
+        for output in classify_agent.invoke(user):
+            print(output)
+        resp = classify_agent.get_response()
+
         if type(resp) is dict:
             new_conversation = [
                 ("human", user),
                 ("ai", resp["output"])
             ]
             user_info.conversations.add_conversations_list(new_conversation)
-
-        print(resp)
