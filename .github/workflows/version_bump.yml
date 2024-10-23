@@ -1,0 +1,64 @@
+name: Version Bump
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to bump'
+        type: choice
+        required: true
+        options:
+          - "patch"
+          - "minor"
+          - "major"
+
+jobs:
+  version-bump:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Check Poetry version and Package version
+        run: |
+          echo "Poetry version: $(poetry --version)"
+          echo "Package version: $(poetry version --short)"
+
+      - name: Create a new branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git checkout -b release/${{ github.event.inputs.version }}
+
+      - name: Bump version
+        run: |
+          poetry version ${{ github.event.inputs.version }}
+          git add pyproject.toml
+          git commit -m "Bump version to $(poetry version --short)"
+
+      - name: Push changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push origin release/${{ github.event.inputs.version }}
+
+      - name: Create a pull request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create --title "Release version to $(poetry version --short)" --body "Bump version to $(poetry version --short)" --base main --head release/${{ github.event.inputs.version }} --label release
