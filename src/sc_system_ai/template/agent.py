@@ -176,6 +176,10 @@ class Agent:
         """アシスタント情報を設定する関数"""
         self.assistant_info = assistant_info
         self.prompt_template.create_prompt(assistant_info=self.assistant_info)
+
+    def set_tools(self, tools: list[Type[BaseTool]]):
+        """ツールを設定する関数"""
+        self.tool.set_tools(tools)
     
     def invoke(self, message: str) -> Iterator[str]:
         """
@@ -184,7 +188,7 @@ class Agent:
         Args:
             message (str): ユーザーからのメッセージ
 
-        is_streamingがTrueの場合は、ジェネレータとなります
+        is_streamingがTrueの場合、エージェントからストリーミングでレスポンスを取得し、返却します。
         ```python
         for output in agent.invoke("user message"):
             print(output)
