@@ -39,13 +39,16 @@ print(agent.get_response())
 
 ## ストリーミング無効
 
-ストリーミングはデフォルトで有効になっているため、インスタンス化の際に無効化する必要があります。
+ストリーミングはデフォルトで有効になっているため、無効にする必要があります。
 
 ```python
 agent = Agent(
     user_info=user_info,
     is_streaming=False
 )
+
+# or
+agent.is_sreaming = False
 ```
 
 `invoke()`メソッドはジェネレータとして実装されているため、`next()`関数を使用し呼び出してください。
