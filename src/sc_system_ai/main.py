@@ -56,9 +56,10 @@ agent = ClassifyAgent(user_info=user)
 
 from typing import Type, Literal, Iterator
 from importlib import import_module
+from typing import Literal
 
-from sc_system_ai.template.ai_settings import llm
 from sc_system_ai.template.agent import Agent
+from sc_system_ai.template.ai_settings import llm
 from sc_system_ai.template.user_prompts import User
 
 AGENT = Literal["classify", "dummy"]
@@ -98,6 +99,9 @@ class Chat:
         return_length: int = 5
     ) -> None:
         self.user = User(name=user_name, major=user_major)
+        if conversation is None:
+            conversation = []
+
         self.user.conversations.add_conversations_list(conversation)
         self.is_streaming = is_streaming
         self.return_length = return_length

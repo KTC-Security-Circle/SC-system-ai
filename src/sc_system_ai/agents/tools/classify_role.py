@@ -1,17 +1,19 @@
 import logging
+from typing import Literal
 
-from typing import Type, Literal
-from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool
+from pydantic import BaseModel, Field
 
 from sc_system_ai.template.ai_settings import llm
-
 
 logger = logging.getLogger(__name__)
 
 #----- ユーザー入力から役割を分類するツール -----
 
 #----- 類似度で分析 -----
+
+# 類似度のしきい値
+SIMILARITY_THRESHOLD = 0.5
 
 class Output(BaseModel):
     word: Literal[
@@ -22,7 +24,7 @@ class Output(BaseModel):
         "遅刻届",
         "遅延届",
         "早退届",
-        "公欠届", 
+        "公欠届",
     ]
     similarity_score: float = Field(ge=0.0, le=1.0)
 
@@ -42,9 +44,9 @@ def keyword_similarity(
     """
     llm = llm.with_structured_output(Output)
     result = llm.invoke(requiremments_prompt)
-    
+
     logger.debug(f"キーワード類似度の結果: {result}")
-    return result.word if result.similarity_score > 0.5 else ""
+    return result.word if result.similarity_score > SIMILARITY_THRESHOLD else ""
 
 def classify_role_similarity(
         user_input: str,
@@ -67,10 +69,10 @@ def check_same_word(
         for check_role in role_type:
             if check_role[:-1] in user_input:
                 return role, check_role
-            
+
         if role in user_input:
             return role, ""
-        
+
     return "", ""
 
 
@@ -80,17 +82,17 @@ dammy_role_data = {
         "遅刻届",
         "遅延届",
         "早退届",
-        "公欠届", 
+        "公欠届",
     ]
 }
 
 class ClassifyRoleInput(BaseModel):
     user_input: str = Field(description="ユーザー入力")
-    
+
 class ClassifyRoleTool(BaseTool):
     name: str = "classify_role_tool"
     description: str = "ユーザーの入力から役割を分類する"
-    args_schema: Type[BaseModel] = ClassifyRoleInput
+    args_schema: type[BaseModel] = ClassifyRoleInput
 
     role_data: dict[str, list[str]] = Field(
         default=dammy_role_data,
@@ -107,7 +109,7 @@ class ClassifyRoleTool(BaseTool):
         result_role_type = ""
 
         result_role, result_role_type = check_same_word(user_input, self.role_data)
-            
+
         if result_role_type == "":
             role_types = []
             for role_type in self.role_data.values():
@@ -129,7 +131,7 @@ class ClassifyRoleTool(BaseTool):
         else:
             return f"分類結果:\n{result_role}.{result_role_type}"
 
-            
+
 classify_role = ClassifyRoleTool()
 
 if __name__ == "__main__":
@@ -143,11 +145,10 @@ if __name__ == "__main__":
             "遅刻届",
             "遅延届",
             "早退届",
-            "公欠届", 
+            "公欠届",
         ]
     }
     """
 
     input = "遅刻した"
     print(classify_role.invoke({"user_input": input}))
-    

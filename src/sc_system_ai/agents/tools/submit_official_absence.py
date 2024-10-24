@@ -2,12 +2,12 @@
 
 import logging
 
-from typing import Type
-from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool
-from langchain_core.output_parsers import StrOutputParser
+from pydantic import BaseModel, Field
 
-from sc_system_ai.template.ai_settings import llm
+# from langchain_core.output_parsers import StrOutputParser
+
+# from sc_system_ai.template.ai_settings import llm
 
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ def submit(
         授業: {classes}
         """
     )
-    
+
     return "公欠の申請が完了しました。"
 
 class SubmitOfficialAbsenceInput(BaseModel):
@@ -50,7 +50,7 @@ class SubmitOfficialAbsenceInput(BaseModel):
 class SubmitOfficialAbsence(BaseTool):
     name: str = "submit_official_absence"
     description: str = "公欠届を提出するツール"
-    args_schema: Type[BaseModel] = SubmitOfficialAbsenceInput
+    args_schema: type[BaseModel] = SubmitOfficialAbsenceInput
 
     def _run(
             self,
@@ -67,5 +67,5 @@ class SubmitOfficialAbsence(BaseTool):
         )
 
         return result
-    
+
 submit_official_absence = SubmitOfficialAbsence()

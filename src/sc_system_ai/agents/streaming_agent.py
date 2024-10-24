@@ -1,17 +1,14 @@
+import logging
 from queue import Queue
 from threading import Thread
+
+from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_openai import AzureChatOpenAI
-from langchain.agents import create_tool_calling_agent, AgentExecutor
 
-from sc_system_ai.template.ai_settings import llm
-from sc_system_ai.template.user_prompts import User
-from sc_system_ai.template.streaming_handler import (
-    StreamingAgentHandler,
-    StreamingToolHandler
-)
 from sc_system_ai.agents.main_agent import MainAgent
-
-import logging
+from sc_system_ai.template.ai_settings import llm
+from sc_system_ai.template.streaming_handler import StreamingAgentHandler, StreamingToolHandler
+from sc_system_ai.template.user_prompts import User
 
 # ロガーの設定
 logger = logging.getLogger(__name__)
@@ -20,10 +17,10 @@ class StreamingAgent(MainAgent):
     def __init__(
         self,
         llm: AzureChatOpenAI=llm,
-        user_info: User=User(),
+        user_info: User | None = None,
         return_length: int=5
     ):
-        super().__init__(llm=llm, user_info=user_info)
+        super().__init__(llm=llm, user_info=user_info if user_info is not None else User())
         self.queue = Queue()
         self.handler = StreamingAgentHandler(self.queue)
         self.tool_handler = StreamingToolHandler(self.queue)

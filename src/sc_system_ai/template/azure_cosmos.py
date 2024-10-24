@@ -1,14 +1,17 @@
-from sc_system_ai.template.ai_settings import embeddings
-from langchain_core.embeddings import Embeddings
-from langchain_core.documents import Document
+import logging
+import os
+from typing import Any
+
+from azure.cosmos import CosmosClient, PartitionKey
+from dotenv import load_dotenv
 from langchain_community.vectorstores.azure_cosmos_db_no_sql import (
     AzureCosmosDBNoSqlVectorSearch,
 )
-from azure.cosmos import CosmosClient, PartitionKey
-from typing import List, Any, Dict
-import os
-import logging
-from dotenv import load_dotenv
+from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
+
+from sc_system_ai.template.ai_settings import embeddings
+
 load_dotenv()
 
 # ロガーの設定
@@ -54,11 +57,11 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         *,
         cosmos_client: CosmosClient = cosmos_client,
         embedding: Embeddings = embeddings,
-        vector_embedding_policy: Dict[str, Any] = vector_embedding_policy,
-        indexing_policy: Dict[str, Any] = indexing_policy,
-        cosmos_container_properties: Dict[str,
+        vector_embedding_policy: dict[str, Any] = vector_embedding_policy,
+        indexing_policy: dict[str, Any] = indexing_policy,
+        cosmos_container_properties: dict[str,
                                           Any] = cosmos_container_properties,
-        cosmos_database_properties: Dict[str,
+        cosmos_database_properties: dict[str,
                                          Any] = cosmos_database_properties,
         database_name: str = database_name,
         container_name: str = container_name,
@@ -76,7 +79,7 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             create_container=create_container,
         )
 
-    def read_all_documents(self) -> List[Document]:
+    def read_all_documents(self) -> list[Document]:
         """全てのdocumentsを読み込む関数"""
         logger.info("全てのdocumentsを読み込みます")
         query = "SELECT c.id, c.text FROM c"
@@ -92,7 +95,7 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
                 Document(page_content=text, metadata=item))
         logger.debug(f"{docs[0].page_content=}, \n\nlength: {len(docs)}")
         return docs
-    
+
     def get_source_by_id(self, id: str) -> str:
         """idを指定してsourceを取得する関数"""
         logger.info(f"{id=}のsourceを取得します")
