@@ -17,6 +17,7 @@ if __name__ == "__main__":
 ```
 """
 import logging
+
 from langchain.globals import set_verbose
 
 
@@ -29,7 +30,7 @@ def setup_logging():
             logging.StreamHandler()  # コンソールにログメッセージを出力
         ]
     )
-    
+
     # 自作パッケージのロガーを設定
     # この設定を行うことで、自作パッケージのログメッセージのみDEBUGレベルで出力される
     # sc_system_ai以下のモジュールでloggerを取得する場合と__main__でloggerを取得する場合でログレベルを変更する

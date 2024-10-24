@@ -2,11 +2,11 @@
 
 from langchain_openai import AzureChatOpenAI
 
-from sc_system_ai.template.user_prompts import User
-from sc_system_ai.template.ai_settings import llm
-from sc_system_ai.template.agent import Agent
 # from sc_system_ai.agents.tools import magic_function
 from sc_system_ai.agents.tools.submit_official_absence import submit_official_absence
+from sc_system_ai.template.agent import Agent
+from sc_system_ai.template.ai_settings import llm
+from sc_system_ai.template.user_prompts import User
 
 dummy_agent_tools = [
     # magic_function
@@ -48,13 +48,13 @@ class DummyAgent(Agent):
     def __init__(
             self,
             llm: AzureChatOpenAI = llm,
-            user_info: User = User(),
+            user_info: User | None = None,
             is_streaming: bool = True,
             return_length: int = 5
     ):
         super().__init__(
             llm=llm,
-            user_info=user_info,
+            user_info=user_info if user_info is not None else User(),
             is_streaming=is_streaming,
             return_length=return_length
         )

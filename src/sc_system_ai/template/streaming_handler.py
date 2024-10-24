@@ -1,8 +1,7 @@
 import logging
-
 from queue import Queue
-from langchain.callbacks.base import BaseCallbackHandler
 
+from langchain.callbacks.base import BaseCallbackHandler
 
 # ロガーの設定
 logger = logging.getLogger(__name__)
@@ -13,7 +12,7 @@ class StreamingAgentHandler(BaseCallbackHandler):
     def __init__(self, queue: Queue):
         super().__init__()
         self.queue = queue
-    
+
     # トークンの生成時に呼び出される関数
     def on_llm_new_token(self, token, **kwargs):
         if token:
