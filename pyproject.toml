@@ -30,6 +30,36 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 
+# Ruffの設定
+[tool.ruff]
+target-version = "py310"
+exclude = [
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".git",
+]
+
+line-length = 120
+indent-width = 4
+
+
+[tool.ruff.lint]
+# PEP8のどのルールを対象に警告を出すか
+select = [
+    "E",
+    "F",
+    "W",
+    "I",
+    "B",
+    "PL",
+    "UP",
+]
+ignore = [
+]
+fixable = ["ALL"]
+
+
 [tool.mypy]
 show_error_context = true # エラー時のメッセージを詳細表示
 show_column_numbers = true # エラー発生箇所の行数/列数を表示
