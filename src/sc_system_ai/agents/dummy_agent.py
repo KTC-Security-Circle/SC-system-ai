@@ -48,15 +48,19 @@ class DummyAgent(Agent):
     def __init__(
             self,
             llm: AzureChatOpenAI = llm,
-            user_info: User = User()
+            user_info: User = User(),
+            is_streaming: bool = True,
+            return_length: int = 5
     ):
         super().__init__(
             llm=llm,
-            user_info=user_info
+            user_info=user_info,
+            is_streaming=is_streaming,
+            return_length=return_length
         )
         self.assistant_info = dummy_agent_info
         super().set_assistant_info(self.assistant_info)
-        super().set_tools(dummy_agent_tools)
+        self.set_tools(dummy_agent_tools)
 
 
 
@@ -74,22 +78,27 @@ if __name__ == "__main__":
     user_info.conversations.add_conversations_list(history)
 
     while True:
-        main_agent = DummyAgent(user_info=user_info)
-        # main_agent.display_agent_info()
+        dummy_agent = DummyAgent(user_info=user_info)
+        # classify_agent.display_agent_info()
         # print(main_agent.get_agent_prompt())
-        # main_agent.display_agent_prompt()
+        # classify_agent.display_agent_prompt()
 
         user = input("ユーザー: ")
         if user == "exit":
             break
 
-        resp = main_agent.invoke(user)
+        # 通常の呼び出し
+        # resp = classify_agent.invoke(user)
+        # print(resp)
+
+        # ストリーミング呼び出し
+        for output in dummy_agent.invoke(user):
+            print(output)
+        resp = dummy_agent.get_response()
+
         if type(resp) is dict:
             new_conversation = [
                 ("human", user),
                 ("ai", resp["output"])
             ]
             user_info.conversations.add_conversations_list(new_conversation)
-        
-        print(resp)
-

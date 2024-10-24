@@ -15,11 +15,15 @@ class MainAgent(Agent):
     def __init__(
             self,
             llm: AzureChatOpenAI = llm,
-            user_info: User = User()
+            user_info: User = User(),
+            is_streaming: bool = True,
+            return_length: int = 5
     ):
         super().__init__(
             llm=llm,
-            user_info=user_info
+            user_info=user_info,
+            is_streaming=is_streaming,
+            return_length=return_length
         )
         self.assistant_info = main_agent_info
         super().set_assistant_info(self.assistant_info)
@@ -39,9 +43,9 @@ if __name__ == "__main__":
     user_info = User(name=user_name, major=user_major)
     user_info.conversations.add_conversations_list(history)
 
-    main_agent = MainAgent(user_info=user_info)
+    main_agent = MainAgent(user_info=user_info, is_streaming=False)
     main_agent.display_agent_info()
     # print(main_agent.get_agent_prompt())
     main_agent.display_agent_prompt()
-    print(main_agent.invoke("magic function に３をいれて"))
+    print(next(main_agent.invoke("magic function に３をいれて")))
 
