@@ -43,9 +43,10 @@ user.conversations.add_conversations_list(conversations)
 print(user.conversations.get_conversations())
 ```
 """
+
+from langchain_core.messages import AIMessage, HumanMessage
 from pydantic import BaseModel, Field
-from typing import Optional, List, Tuple
-from langchain_core.messages import HumanMessage, AIMessage
+
 from sc_system_ai.template.prompts import user_info_template
 
 
@@ -57,8 +58,8 @@ class Conversation(BaseModel):
 
 class ConversationHistory(BaseModel):
     """会話履歴を保持するクラス"""
-    conversations: List[Conversation] = Field(default_factory=list, description="会話履歴のリスト")
-    
+    conversations: list[Conversation] = Field(default_factory=list, description="会話履歴のリスト")
+
     def format_conversation(self) -> str:
         """会話履歴をLangChainの会話履歴の形に整形して返す関数"""
         chat_history = []
@@ -68,8 +69,8 @@ class ConversationHistory(BaseModel):
             elif conversation.role == "ai":
                 chat_history.append(AIMessage(conversation.content))
         return chat_history
-    
-    def get_conversations(self) -> List[Tuple[str, str]]:
+
+    def get_conversations(self) -> list[tuple[str, str]]:
         """会話履歴を取得する関数"""
         return [(conversation.role, conversation.content) for conversation in self.conversations]
 
@@ -85,8 +86,8 @@ class ConversationHistory(BaseModel):
         """
         new_conversation = Conversation(role=role, content=content)
         self.conversations.append(new_conversation)
-    
-    def add_conversations_list(self, conversations: List[Tuple[str, str]]):
+
+    def add_conversations_list(self, conversations: list[tuple[str, str]]):
         """
         会話履歴にリスト形式の会話を追加する関数
         role: 発言者の役割 (human または ai)
@@ -146,7 +147,7 @@ class UserPromptTemplate:
     Returns:
         str: ユーザー情報のプロンプトテンプレート
     """
-    def __init__(self, user_info: Optional[User] = None):
+    def __init__(self, user_info: User | None = None):
         self.user_info = user_info
         if user_info is not None:
             self.user_prompt_template = self._format()
@@ -159,7 +160,7 @@ class UserPromptTemplate:
             return self.user_prompt_template
         else:
             return "No user args. Please format user args."
-    
+
     def _format(self) -> str:
         """ユーザー情報のプロンプトテンプレートをフォーマットする関数"""
         return user_info_template.format(name=self.user_info.name, major=self.user_info.major)
@@ -169,17 +170,17 @@ class UserPromptTemplate:
         self.user_info = User(user_name, user_major)
         self.user_prompt_template = self._format()
         return self.user_prompt_template
-    
+
     def update_user_prompt_template(self, user_name: str, user_major: str) -> str:
         """ユーザー情報のプロンプトテンプレートを更新する関数"""
         self.user_info.update_user(user_name, user_major)
         self.user_prompt_template = self._format()
         return self.user_prompt_template
-    
+
     def get_user_info(self) -> User:
         """現在保持しているユーザー情報を取得する関数"""
         return self.user_info
-    
+
     def get_user_prompt_template(self) -> str:
         """ユーザー情報のプロンプトテンプレートを取得する関数"""
         return self.user_prompt_template

@@ -1,17 +1,14 @@
+import logging
 from queue import Queue
 from threading import Thread
+
+from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_openai import AzureChatOpenAI
-from langchain.agents import create_tool_calling_agent, AgentExecutor
 
-from sc_system_ai.template.ai_settings import llm
-from sc_system_ai.template.user_prompts import User
-from sc_system_ai.template.streaming_handler import (
-    StreamingAgentHandler,
-    StreamingToolHandler
-)
 from sc_system_ai.agents.main_agent import MainAgent
-
-import logging
+from sc_system_ai.template.ai_settings import llm
+from sc_system_ai.template.streaming_handler import StreamingAgentHandler, StreamingToolHandler
+from sc_system_ai.template.user_prompts import User
 
 # ロガーの設定
 logger = logging.getLogger(__name__)

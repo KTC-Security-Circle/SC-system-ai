@@ -1,7 +1,8 @@
 import os
-from langchain_openai import AzureChatOpenAI
-from langchain_openai import AzureOpenAIEmbeddings
+
 from dotenv import load_dotenv
+from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
+
 load_dotenv()  # .envで設定した環境変数を読み込む
 
 

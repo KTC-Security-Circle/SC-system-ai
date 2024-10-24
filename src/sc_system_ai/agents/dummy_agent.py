@@ -2,11 +2,11 @@
 
 from langchain_openai import AzureChatOpenAI
 
-from sc_system_ai.template.user_prompts import User
-from sc_system_ai.template.ai_settings import llm
-from sc_system_ai.template.agent import Agent
 # from sc_system_ai.agents.tools import magic_function
 from sc_system_ai.agents.tools.submit_official_absence import submit_official_absence
+from sc_system_ai.template.agent import Agent
+from sc_system_ai.template.ai_settings import llm
+from sc_system_ai.template.user_prompts import User
 
 dummy_agent_tools = [
     # magic_function

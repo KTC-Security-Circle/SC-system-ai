@@ -1,10 +1,7 @@
 import logging
 
-
-from typing import Type
-from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool
-
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +13,7 @@ class MagicFunctionInput(BaseModel):
 class MagicFunctionTool(BaseTool):
     name: str = "magic_function_tool"
     description: str = "Applies a magic function to an input."
-    args_schema: Type[BaseModel] = MagicFunctionInput
+    args_schema: type[BaseModel] = MagicFunctionInput
 
     def _run(
             self,

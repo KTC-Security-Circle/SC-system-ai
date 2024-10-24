@@ -1,11 +1,10 @@
 import logging
 
-from typing import Type
-from pydantic import BaseModel, Field, ConfigDict
 from langchain_core.tools import BaseTool
+from pydantic import BaseModel, ConfigDict, Field
 
-from sc_system_ai.template.user_prompts import User
 from sc_system_ai.template.agent import Agent
+from sc_system_ai.template.user_prompts import User
 
 logger = logging.getLogger(__name__)
 
@@ -45,11 +44,11 @@ class CallingAgent(BaseTool):
 
     name: str = "calling_agent"
     description: str = "エージェントを呼び出すツール"
-    args_schema: Type[BaseModel] = CallingAgentInput
+    args_schema: type[BaseModel] = CallingAgentInput
     return_direct: bool = True
 
     user_info: User = Field(description="ユーザー情報", default=User())
-    agent: Type[Agent] = Agent
+    agent: type[Agent] = Agent
 
     def __init__(self) -> None:
         super().__init__()
@@ -88,7 +87,7 @@ class CallingAgent(BaseTool):
             self,
             name: str,
             description: str,
-            agent: Type[Agent]
+            agent: type[Agent]
         ) -> None:
         """ツール情報の設定
 

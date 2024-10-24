@@ -1,12 +1,14 @@
-from langchain_core.documents import Document
-from langchain_community.retrievers import AzureAISearchRetriever
-from langchain_core.tools import BaseTool
-from pydantic import BaseModel, Field
-from typing import Type, List
 import logging
 import os
-from sc_system_ai.template.azure_cosmos import CosmosDBManager
+
 from dotenv import load_dotenv
+from langchain_community.retrievers import AzureAISearchRetriever
+from langchain_core.documents import Document
+from langchain_core.tools import BaseTool
+from pydantic import BaseModel, Field
+
+from sc_system_ai.template.azure_cosmos import CosmosDBManager
+
 load_dotenv()
 
 
@@ -14,7 +16,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-def search_school_database_aisearch(search_word: str) -> List[Document]:
+def search_school_database_aisearch(search_word: str) -> list[Document]:
     """学校に関する情報を検索する関数(過去のデータベースを参照)"""
     retriever = AzureAISearchRetriever(
         service_name=os.environ["AZURE_AI_SEARCH_SERVICE_NAME"],
@@ -25,7 +27,7 @@ def search_school_database_aisearch(search_word: str) -> List[Document]:
     )
     return retriever.invoke(search_word)
 
-def search_school_database_cosmos(search_word: str, top_k: int = 2) -> List[Document]:
+def search_school_database_cosmos(search_word: str, top_k: int = 2) -> list[Document]:
     """学校に関する情報を検索する関数(現在のデータベースを参照)"""
     cosmos_manager = CosmosDBManager()
     docs = cosmos_manager.similarity_search(search_word, k=top_k)
@@ -43,12 +45,12 @@ class SearchSchoolDataInput(BaseModel):
 class SearchSchoolDataTool(BaseTool):
     name: str = "search_school_data_tool"
     description: str = "学校に関する情報を検索するためのツール"
-    args_schema: Type[BaseModel] = SearchSchoolDataInput
+    args_schema: type[BaseModel] = SearchSchoolDataInput
 
     def _run(
             self,
             search_word: str,
-    ) -> List[str]:
+    ) -> list[str]:
         """use the tool."""
         logger.info(f"Search School Data Toolが次の値で呼び出されました: {search_word}")
         result = search_school_database_cosmos(search_word)

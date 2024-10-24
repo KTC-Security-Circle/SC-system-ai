@@ -7,22 +7,19 @@ Agentの基底クラスを作成します。このクラスは、エージェン
 
 """
 import logging
+from collections.abc import Iterator
 from queue import Queue
 from threading import Thread
-from typing import Type, Iterator
 
-from langchain_openai import AzureChatOpenAI
-from langchain.agents import create_tool_calling_agent, AgentExecutor
+from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain.tools import BaseTool
+from langchain_openai import AzureChatOpenAI
 
-from sc_system_ai.template.ai_settings import llm
-from sc_system_ai.template.user_prompts import User
-from sc_system_ai.template.system_prompt import PromptTemplate
 from sc_system_ai.agents.tools import magic_function, search_duckduckgo
-from sc_system_ai.template.streaming_handler import (
-    StreamingAgentHandler,
-    StreamingToolHandler
-)
+from sc_system_ai.template.ai_settings import llm
+from sc_system_ai.template.streaming_handler import StreamingAgentHandler, StreamingToolHandler
+from sc_system_ai.template.system_prompt import PromptTemplate
+from sc_system_ai.template.user_prompts import User
 
 # ロガーの設定
 logger = logging.getLogger(__name__)
@@ -39,7 +36,7 @@ class ToolManager:
     """
     def __init__(
             self,
-            tools: list[Type[BaseTool]] = [],
+            tools: list[type[BaseTool]] = [],
             is_streaming: bool = True,
             queue: Queue = None,
     ):
@@ -50,7 +47,7 @@ class ToolManager:
     @property
     def is_streaming(self):
         return self._is_streaming
-    
+
     @is_streaming.setter
     def is_streaming(self, is_streaming: bool):
         self._is_streaming = is_streaming
@@ -60,7 +57,7 @@ class ToolManager:
         else:
             self.cancel_streaming()
 
-    def setup_streaming(self, tools: list[Type[BaseTool]]) -> list[Type[BaseTool]]:
+    def setup_streaming(self, tools: list[type[BaseTool]]) -> list[type[BaseTool]]:
         """ストリーミングのセットアップを行う関数"""
         self.handler = StreamingToolHandler(self.queue)
 
@@ -74,7 +71,7 @@ class ToolManager:
         for tool in self.tools:
             tool.callbacks = None
 
-    def set_tools(self, tools: list[Type[BaseTool]]):
+    def set_tools(self, tools: list[type[BaseTool]]):
         """ツールを追加する関数"""
         self.tools += self.setup_streaming(tools) if self._is_streaming else tools
 
@@ -117,7 +114,7 @@ class Agent:
         self._is_streaming = is_streaming
         self._return_length = return_length
         self.queue = Queue()
-        
+
         # assistant_infoとtoolsは各エージェントで設定する
         self.assistant_info = None
         self.tool = ToolManager(tools=template_tools, is_streaming=self._is_streaming, queue=self.queue)
@@ -132,7 +129,7 @@ class Agent:
     @property
     def is_streaming(self):
         return self._is_streaming
-    
+
     @is_streaming.setter
     def is_streaming(self, is_streaming: bool):
         self._is_streaming = is_streaming
@@ -177,10 +174,10 @@ class Agent:
         self.assistant_info = assistant_info
         self.prompt_template.create_prompt(assistant_info=self.assistant_info)
 
-    def set_tools(self, tools: list[Type[BaseTool]]):
+    def set_tools(self, tools: list[type[BaseTool]]):
         """ツールを設定する関数"""
         self.tool.set_tools(tools)
-    
+
     def invoke(self, message: str) -> Iterator[str]:
         """
         エージェントを実行する関数
@@ -216,19 +213,19 @@ class Agent:
         else:
             self._invoke(message)
             yield self.result
-    
+
     def _invoke(self, message: str):
         try: # エージェントの実行
             logger.info("エージェントの実行を開始します。\n-------------------\n")
             logger.debug(f"最終的なプロンプト: {self.prompt_template.full_prompt.messages}")
             self.result = self.agent_executor.invoke({
                 "chat_history": self.user_info.conversations.format_conversation(),
-                "messages": message, 
+                "messages": message,
             })
         except Exception as e:
             logger.error(f"エージェントの実行に失敗しました。エラー内容: {e}")
             self.result = "エージェントの実行に失敗しました。"
-    
+
     def _streaming_invoke(self, message: str):
         phrase = ""
         thread = Thread(target=self._invoke, args=(message,))
@@ -261,7 +258,7 @@ class Agent:
             return "エージェントの実行が行われていません。"
         else:
             return resp
-    
+
     def get_agent_info(self):
         """Agentの情報を取得する関数"""
         self.agent_info = agent_info.format(
@@ -270,16 +267,16 @@ class Agent:
             tools=self.tool.tools
         )
         return self.agent_info
-    
+
     def display_agent_info(self):
         """Agentの情報を表示する関数"""
         self.get_agent_info()
         print(self.agent_info)
-    
+
     def get_agent_prompt(self):
         """Agentのプロンプトを取得する関数"""
         return self.prompt_template.get_prompt()
-    
+
     def display_agent_prompt(self):
         """Agentのプロンプトを表示する関数"""
         self.prompt_template.display_prompt()
@@ -307,7 +304,7 @@ if __name__ == "__main__":
     )
     agent.assistant_info = "あなたは優秀な校正者です。"
     agent.tool.set_tools(tools)
-    
+
     result = next(agent.invoke("magic function に３"))
     print(result)
 

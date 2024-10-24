@@ -1,9 +1,9 @@
 import logging
+
 from langchain_core.prompts import ChatPromptTemplate
 
 from sc_system_ai.template.prompts import assistant_info_template, full_system_template
-from sc_system_ai.template.user_prompts import UserPromptTemplate, User
-
+from sc_system_ai.template.user_prompts import User, UserPromptTemplate
 
 # ロガーの設定
 logger = logging.getLogger(__name__)
@@ -23,9 +23,9 @@ class PromptTemplate:
     - display_prompt: プロンプトを表示する関数
     """
     def __init__(
-            self, 
+            self,
             full_system_template: str = full_system_template,
-            assistant_info: str = assistant_info_template, 
+            assistant_info: str = assistant_info_template,
             user_info: User = User(),
             ):
         self.full_system_template = full_system_template
@@ -49,11 +49,11 @@ class PromptTemplate:
         self.full_prompt = ChatPromptTemplate.from_messages([
             ("system", formatted_system_prompt), # システムプロンプト
             ("placeholder", "{chat_history}"),  # ユーザーとの会話
-            ("human", "{messages}"), 
+            ("human", "{messages}"),
             ("placeholder", "{agent_scratchpad}"),
         ])
         return self.full_prompt
-    
+
     def get_prompt(self):
         """フルのシステムプロンプトを取得する関数"""
         return self.full_prompt.messages
