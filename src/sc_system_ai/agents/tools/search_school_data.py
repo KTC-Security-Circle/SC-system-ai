@@ -5,10 +5,10 @@ from pydantic import BaseModel, Field
 from typing import Type, List
 import logging
 import os
+from sc_system_ai.template.azure_cosmos import CosmosDBManager
 from dotenv import load_dotenv
 load_dotenv()
 
-from sc_system_ai.template.azure_cosmos import CosmosDBManager
 
 
 logger = logging.getLogger(__name__)

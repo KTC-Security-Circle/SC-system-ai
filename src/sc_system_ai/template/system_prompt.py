@@ -1,8 +1,12 @@
-from langchain_core.messages import HumanMessage, SystemMessage
+import logging
 from langchain_core.prompts import ChatPromptTemplate
 
 from sc_system_ai.template.prompts import assistant_info_template, full_system_template
 from sc_system_ai.template.user_prompts import UserPromptTemplate, User
+
+
+# ロガーの設定
+logger = logging.getLogger(__name__)
 
 class PromptTemplate:
     """
@@ -22,7 +26,7 @@ class PromptTemplate:
             self, 
             full_system_template: str = full_system_template,
             assistant_info: str = assistant_info_template, 
-            user_info: str = User,
+            user_info: User = User(),
             ):
         self.full_system_template = full_system_template
         self.assistant_info = assistant_info
@@ -32,12 +36,14 @@ class PromptTemplate:
 
         self.full_prompt = self.create_prompt(assistant_info=self.assistant_info, user_info=self.user_info)
 
-    def create_prompt(self, assistant_info: str = None, user_info: str = None):
+    def create_prompt(self, assistant_info: str | None = None, user_info: User | None = None):
         """フルのシステムプロンプトを作成する関数"""
         if assistant_info is not None:
             self.assistant_info = assistant_info
+            logger.debug(f"assistant_info setting: {self.assistant_info}")
         if user_info is not None:
             self.user_info = user_info
+            logger.debug(f"user_info setting: {self.user_info}")
 
         formatted_system_prompt = self.full_system_template.format(assistant_info=self.assistant_info, user_info=self.user_info)
         self.full_prompt = ChatPromptTemplate.from_messages([

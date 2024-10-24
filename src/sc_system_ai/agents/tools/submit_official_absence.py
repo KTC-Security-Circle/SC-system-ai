@@ -5,9 +5,9 @@ import logging
 from typing import Type
 from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool
-from langchain_core.output_parsers import StrOutputParser
+# from langchain_core.output_parsers import StrOutputParser
 
-from sc_system_ai.template.ai_settings import llm
+# from sc_system_ai.template.ai_settings import llm
 
 
 logger = logging.getLogger(__name__)
