@@ -91,9 +91,12 @@ class Chat:
         self,
         user_name: str,
         user_major: str,
-        conversation: list[tuple[str, str]] = []
+        conversation: list[tuple[str, str]] | None = None
     ) -> None:
         self.user = User(name=user_name, major=user_major)
+        if conversation is None:
+            conversation = []
+
         self.user.conversations.add_conversations_list(conversation)
 
     def invoke(
@@ -130,8 +133,8 @@ class Chat:
             module = import_module(module_name)
             agent_class = getattr(module, class_name)
             return agent_class(llm=llm, user_info=self.user)
-        except (ModuleNotFoundError, AttributeError):
-            raise ValueError(f"エージェントが見つかりません: {command}")
+        except (ModuleNotFoundError, AttributeError) as e:
+            raise ValueError(f"エージェントが見つかりません: {command}") from e
 
 
 

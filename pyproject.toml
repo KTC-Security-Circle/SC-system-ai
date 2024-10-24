@@ -59,6 +59,9 @@ ignore = [
 ]
 fixable = ["ALL"]
 
+[tool.ruff.lint.pylint]
+max-args = 9
+
 
 [tool.mypy]
 show_error_context = true # エラー時のメッセージを詳細表示

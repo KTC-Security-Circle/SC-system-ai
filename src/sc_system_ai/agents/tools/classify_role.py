@@ -12,6 +12,9 @@ logger = logging.getLogger(__name__)
 
 #----- 類似度で分析 -----
 
+# 類似度のしきい値
+SIMILARITY_THRESHOLD = 0.5
+
 class Output(BaseModel):
     word: Literal[
         # role
@@ -43,7 +46,7 @@ def keyword_similarity(
     result = llm.invoke(requiremments_prompt)
 
     logger.debug(f"キーワード類似度の結果: {result}")
-    return result.word if result.similarity_score > 0.5 else ""
+    return result.word if result.similarity_score > SIMILARITY_THRESHOLD else ""
 
 def classify_role_similarity(
         user_input: str,
@@ -142,7 +145,7 @@ if __name__ == "__main__":
             "遅刻届",
             "遅延届",
             "早退届",
-            "公欠届", 
+            "公欠届",
         ]
     }
     """

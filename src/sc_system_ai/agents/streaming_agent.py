@@ -17,10 +17,10 @@ class StreamingAgent(MainAgent):
     def __init__(
         self,
         llm: AzureChatOpenAI=llm,
-        user_info: User=User(),
+        user_info: User | None = None,
         return_length: int=5
     ):
-        super().__init__(llm=llm, user_info=user_info)
+        super().__init__(llm=llm, user_info=user_info if user_info is not None else User())
         self.queue = Queue()
         self.handler = StreamingAgentHandler(self.queue)
         self.tool_handler = StreamingToolHandler(self.queue)

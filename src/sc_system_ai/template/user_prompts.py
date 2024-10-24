@@ -117,7 +117,7 @@ class User(BaseModel):
         name (str): ユーザーの名前
         major (str): ユーザーの専攻
         conversations (ConversationHistory): 会話履歴
-    
+
     Returns:
         str: 現在のユーザー情報
     """
@@ -140,10 +140,10 @@ class UserPromptTemplate:
     """
     ### UserPromptTemplate class
     ユーザー情報のプロンプトテンプレートを生成するクラス
-    
+
     Args:
         user_info (User): ユーザーの情報
-    
+
     Returns:
         str: ユーザー情報のプロンプトテンプレート
     """

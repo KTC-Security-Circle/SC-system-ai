@@ -36,11 +36,11 @@ class ToolManager:
     """
     def __init__(
             self,
-            tools: list[type[BaseTool]] = [],
+            tools: list[type[BaseTool]] | None = None,
             is_streaming: bool = True,
             queue: Queue = None,
     ):
-        self.tools = tools
+        self.tools = tools if tools is not None else []
         self._is_streaming = is_streaming
         self.queue = queue
 
@@ -104,12 +104,12 @@ class Agent:
     def __init__(
             self,
             llm: AzureChatOpenAI = llm,
-            user_info: User = User(),
+            user_info: User | None = None,
             is_streaming: bool = True,
             return_length: int = 5
     ):
         self.llm = llm
-        self.user_info = user_info
+        self.user_info = user_info if user_info is not None else User()
 
         self._is_streaming = is_streaming
         self._return_length = return_length

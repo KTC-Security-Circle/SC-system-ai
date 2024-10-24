@@ -26,11 +26,11 @@ class PromptTemplate:
             self,
             full_system_template: str = full_system_template,
             assistant_info: str = assistant_info_template,
-            user_info: User = User(),
+            user_info: User | None = None,
             ):
         self.full_system_template = full_system_template
         self.assistant_info = assistant_info
-        self.user_info = user_info
+        self.user_info = user_info if user_info is not None else User()
 
         self.user_info_prompt = UserPromptTemplate(user_info=self.user_info)
 
@@ -45,7 +45,9 @@ class PromptTemplate:
             self.user_info = user_info
             logger.debug(f"user_info setting: {self.user_info}")
 
-        formatted_system_prompt = self.full_system_template.format(assistant_info=self.assistant_info, user_info=self.user_info)
+        formatted_system_prompt = self.full_system_template.format(
+            assistant_info=self.assistant_info, user_info=self.user_info
+            )
         self.full_prompt = ChatPromptTemplate.from_messages([
             ("system", formatted_system_prompt), # システムプロンプト
             ("placeholder", "{chat_history}"),  # ユーザーとの会話
