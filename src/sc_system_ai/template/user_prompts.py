@@ -60,9 +60,9 @@ class ConversationHistory(BaseModel):
     """会話履歴を保持するクラス"""
     conversations: list[Conversation] = Field(default_factory=list, description="会話履歴のリスト")
 
-    def format_conversation(self) -> str:
+    def format_conversation(self) -> list:
         """会話履歴をLangChainの会話履歴の形に整形して返す関数"""
-        chat_history = []
+        chat_history: list[HumanMessage | AIMessage] = []
         for conversation in self.conversations:
             if conversation.role == "human":
                 chat_history.append(HumanMessage(conversation.content))

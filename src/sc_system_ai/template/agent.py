@@ -10,9 +10,11 @@ import logging
 from collections.abc import Iterator
 from queue import Queue
 from threading import Thread
+from typing import Any
 
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain.tools import BaseTool
+from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_openai import AzureChatOpenAI
 
 from sc_system_ai.agents.tools import magic_function, search_duckduckgo
@@ -36,20 +38,22 @@ class ToolManager:
     """
     def __init__(
             self,
-            tools: list[type[BaseTool]] | None = None,
+            tools: list | None = None,
             is_streaming: bool = True,
-            queue: Queue = None,
+            queue: Queue | None = None,
     ):
-        self.tools = tools if tools is not None else []
+        self.tools: list = []
         self._is_streaming = is_streaming
-        self.queue = queue
+        self.queue = queue if queue is not None else Queue()
+
+        self.set_tools(tools) if tools is not None else []
 
     @property
-    def is_streaming(self):
+    def is_streaming(self) -> bool:
         return self._is_streaming
 
     @is_streaming.setter
-    def is_streaming(self, is_streaming: bool):
+    def is_streaming(self, is_streaming: bool) -> None:
         self._is_streaming = is_streaming
 
         if self._is_streaming:
@@ -66,14 +70,29 @@ class ToolManager:
 
         return tools
 
-    def cancel_streaming(self):
+    def cancel_streaming(self) -> None:
         """ストリーミングのセットアップを解除する関数"""
         for tool in self.tools:
             tool.callbacks = None
 
-    def set_tools(self, tools: list[type[BaseTool]]):
+    def set_tools(self, tools: list) -> None:
         """ツールを追加する関数"""
-        self.tools += self.setup_streaming(tools) if self._is_streaming else tools
+        if not all(self._tool_checker(tool) for tool in tools):
+            raise ValueError("ツールの追加に失敗しました。")
+        for tool in tools:
+            if self._tool_checker(tool):
+                self.tools.append(tool)
+            else:
+                raise ValueError("ツールの追加に失敗しました。")
+
+    def _tool_checker(self, tool: Any) -> bool:
+        """ツールのチェックを行う関数"""
+        result = False
+        if isinstance(tool, DuckDuckGoSearchRun):
+            result = True
+        elif isinstance(tool, BaseTool):
+            result = True
+        return result
 
 
 
@@ -113,10 +132,10 @@ class Agent:
 
         self._is_streaming = is_streaming
         self._return_length = return_length
-        self.queue = Queue()
+        self.queue: Queue = Queue()
 
         # assistant_infoとtoolsは各エージェントで設定する
-        self.assistant_info = None
+        self.assistant_info = ""
         self.tool = ToolManager(tools=template_tools, is_streaming=self._is_streaming, queue=self.queue)
 
         self.prompt_template = PromptTemplate(assistant_info=self.assistant_info, user_info=self.user_info)
@@ -127,11 +146,11 @@ class Agent:
         self.get_agent_info()
 
     @property
-    def is_streaming(self):
+    def is_streaming(self) -> bool:
         return self._is_streaming
 
     @is_streaming.setter
-    def is_streaming(self, is_streaming: bool):
+    def is_streaming(self, is_streaming: bool) -> None:
         self._is_streaming = is_streaming
         self.tool.is_streaming = is_streaming
 
@@ -141,16 +160,16 @@ class Agent:
             self.cancel_streaming()
 
     @property
-    def return_length(self):
+    def return_length(self) -> int:
         return self._return_length
 
     @return_length.setter
-    def return_length(self, return_length: int):
+    def return_length(self, return_length: int) -> None:
         if return_length <= 0:
             raise ValueError("return_lengthは1以上の整数である必要があります。")
         self._return_length = return_length
 
-    def setup_streaming(self):
+    def setup_streaming(self) -> None:
         """ストリーミング時のセットアップを行う関数"""
         self.clear_queue()
         self.handler = StreamingAgentHandler(self.queue)
@@ -159,26 +178,26 @@ class Agent:
         self.llm.streaming = True
         self.llm.callbacks = [self.handler]
 
-    def cancel_streaming(self):
+    def cancel_streaming(self) -> None:
         """ストリーミング時のセットアップを解除する関数"""
         self.llm.streaming = False
         self.llm.callbacks = None
 
-    def clear_queue(self):
+    def clear_queue(self) -> None:
         """キューをクリアする関数"""
         while not self.queue.empty():
             self.queue.get()
 
-    def set_assistant_info(self, assistant_info: str):
+    def set_assistant_info(self, assistant_info: str) -> None:
         """アシスタント情報を設定する関数"""
         self.assistant_info = assistant_info
         self.prompt_template.create_prompt(assistant_info=self.assistant_info)
 
-    def set_tools(self, tools: list[type[BaseTool]]):
+    def set_tools(self, tools: list) -> None:
         """ツールを設定する関数"""
         self.tool.set_tools(tools)
 
-    def invoke(self, message: str) -> Iterator[str]:
+    def invoke(self, message: str) -> Iterator[str | dict[str, Any]]:
         """
         エージェントを実行する関数
 
@@ -206,15 +225,18 @@ class Agent:
             tools=self.tool.tools,
             callbacks= [self.handler] if self._is_streaming else None
         )
-        self.result = ""
+        self.result: dict[str, Any] = {}
 
         if self._is_streaming:
             yield from self._streaming_invoke(message)
         else:
             self._invoke(message)
-            yield self.result
+            if "error" in self.result:
+                yield self.result["error"]
+            else:
+                yield self.result
 
-    def _invoke(self, message: str):
+    def _invoke(self, message: str) -> None:
         try: # エージェントの実行
             logger.info("エージェントの実行を開始します。\n-------------------\n")
             logger.debug(f"最終的なプロンプト: {self.prompt_template.full_prompt.messages}")
@@ -224,9 +246,9 @@ class Agent:
             })
         except Exception as e:
             logger.error(f"エージェントの実行に失敗しました。エラー内容: {e}")
-            self.result = "エージェントの実行に失敗しました。"
+            self.result = {"error": f"エージェントの実行に失敗しました。エラー内容: {e}"}
 
-    def _streaming_invoke(self, message: str):
+    def _streaming_invoke(self, message: str) -> Iterator[str]:
         phrase = ""
         thread = Thread(target=self._invoke, args=(message,))
 
@@ -250,7 +272,7 @@ class Agent:
             if thread and thread.is_alive():
                 thread.join()
 
-    def get_response(self):
+    def get_response(self) -> dict | str:
         """エージェントのレスポンスを取得する関数"""
         try:
             resp = self.result
@@ -259,7 +281,7 @@ class Agent:
         else:
             return resp
 
-    def get_agent_info(self):
+    def get_agent_info(self) -> str:
         """Agentの情報を取得する関数"""
         self.agent_info = agent_info.format(
             assistant_info=self.assistant_info,
@@ -268,16 +290,16 @@ class Agent:
         )
         return self.agent_info
 
-    def display_agent_info(self):
+    def display_agent_info(self) -> None:
         """Agentの情報を表示する関数"""
         self.get_agent_info()
         print(self.agent_info)
 
-    def get_agent_prompt(self):
+    def get_agent_prompt(self) -> list:
         """Agentのプロンプトを取得する関数"""
         return self.prompt_template.get_prompt()
 
-    def display_agent_prompt(self):
+    def display_agent_prompt(self) -> None:
         """Agentのプロンプトを表示する関数"""
         self.prompt_template.display_prompt()
 
