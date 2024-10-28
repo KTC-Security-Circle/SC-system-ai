@@ -56,7 +56,7 @@ agent = ClassifyAgent(user_info=user)
 
 from collections.abc import Iterator
 from importlib import import_module
-from typing import cast, Literal
+from typing import Literal, cast
 
 from sc_system_ai.template.agent import Agent
 from sc_system_ai.template.ai_settings import llm
