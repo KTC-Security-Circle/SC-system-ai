@@ -138,7 +138,7 @@ class Chat:
         else:
             resp = next(agent.invoke(message))
             if type(resp) is dict:
-                yield resp["output"] # type: str
+                yield str(resp["output"])
             elif type(resp) is str:
                 yield resp
 
