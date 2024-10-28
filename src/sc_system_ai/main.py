@@ -137,7 +137,10 @@ class Chat:
                     yield resp
         else:
             resp = next(agent.invoke(message))
-            yield resp["output"] if type(resp) is dict else resp
+            if type(resp) is dict:
+                yield resp["output"] # type: str
+            elif type(resp) is str:
+                yield resp
 
     def _call_agent(self, command: AGENT) -> Agent:
         try:
