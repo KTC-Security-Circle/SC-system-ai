@@ -110,7 +110,7 @@ class Chat:
         self,
         message: str,
         command: AGENT = "classify"
-    ) -> Iterator[str | None]:
+    ) -> Iterator[str]:
         """エージェントを呼び出し、チャットを行う関数
 
         Args:
@@ -132,12 +132,14 @@ class Chat:
         agent = self._call_agent(command)
 
         if self.is_streaming:
-            yield from agent.invoke(message)
+            for resp in agent.invoke(message):
+                if type(resp) is str:
+                    yield resp
         else:
             resp = next(agent.invoke(message))
             yield resp["output"] if type(resp) is dict else resp
 
-    def _call_agent(self, command: AGENT) -> type[Agent]:
+    def _call_agent(self, command: AGENT) -> Agent:
         try:
             module_name = f"sc_system_ai.agents.{command}_agent"
             class_name = f"{command.capitalize()}Agent"
@@ -151,13 +153,16 @@ class Chat:
                 return_length=self.return_length
             )
 
-            return agent
-        except (ModuleNotFoundError, AttributeError) as _:
+            if isinstance(agent, Agent):
+                return agent
+            else:
+                raise ValueError
+        except (ModuleNotFoundError, AttributeError, ValueError) as _:
             raise ValueError(f"エージェントが見つかりません: {command}") from None
 
 
 
-def static_chat():
+def static_chat() -> None:
     # ユーザー情報
     user_name = "hogehoge"
     user_major = "fugafuga専攻"
@@ -180,7 +185,7 @@ def static_chat():
 
 
 
-def streaming_chat():
+def streaming_chat() -> None:
     # ユーザー情報
     user_name = "hogehoge"
     user_major = "fugafuga専攻"

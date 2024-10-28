@@ -42,11 +42,12 @@ class ToolManager:
             is_streaming: bool = True,
             queue: Queue | None = None,
     ):
-        self.tools: list = []
+        self.tools: list[BaseTool] = []
         self._is_streaming = is_streaming
         self.queue = queue if queue is not None else Queue()
 
-        self.set_tools(tools) if tools is not None else []
+        if tools is not None:
+            self.set_tools(tools)
 
     @property
     def is_streaming(self) -> bool:
@@ -61,7 +62,7 @@ class ToolManager:
         else:
             self.cancel_streaming()
 
-    def setup_streaming(self, tools: list[type[BaseTool]]) -> list[type[BaseTool]]:
+    def setup_streaming(self, tools: list[BaseTool]) -> list[BaseTool]:
         """ストリーミングのセットアップを行う関数"""
         self.handler = StreamingToolHandler(self.queue)
 

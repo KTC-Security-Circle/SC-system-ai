@@ -58,7 +58,7 @@ class SubmitOfficialAbsence(BaseTool):
             date: str,
             classes: list[str],
             reason: str
-    ):
+    ) -> str:
         result = submit(
             name=name,
             date=date,
