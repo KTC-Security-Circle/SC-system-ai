@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, ConfigDict, Field
@@ -69,7 +70,20 @@ class CallingAgent(BaseTool):
             logger.debug(f"エージェントの呼び出しに成功しました: {self.agent}")
 
         resp = next(agent.invoke(user_input))
-        return resp["output"] if type(resp) is dict else resp
+
+        return self._type_checker(resp)
+
+    def _type_checker(self, response: Any) -> str:
+        """レスポンスの型チェック"""
+        resp = ""
+        if type(response) is dict:
+            if "output" in response:
+                resp = response["output"]
+        elif type(response) is str:
+            resp = response
+
+        return resp
+
 
     def set_user_info(self, user_info: User) -> None:
         """ユーザー情報の設定

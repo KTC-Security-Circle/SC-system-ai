@@ -100,7 +100,12 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         """idを指定してsourceを取得する関数"""
         logger.info(f"{id=}のsourceを取得します")
         item = self._container.read_item(item=id, partition_key=id)
-        return item.get("source")
+
+        result = item.get("source")
+        if type(result) is str:
+            return result
+        else:
+            return "sourceが見つかりませんでした"
 
 
 

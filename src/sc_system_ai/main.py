@@ -144,15 +144,13 @@ class Chat:
             module = import_module(module_name)
             agent_class = getattr(module, class_name)
 
-            if self.is_streaming:
-                agent = agent_class(
-                    llm=llm,
-                    user_info=self.user,
-                    is_streaming=self.is_streaming,
-                    return_length=self.return_length
-                )
-            else:
-                agent = agent_class(llm=llm, user_info=self.user)
+            agent = agent_class(
+                llm=llm,
+                user_info=self.user,
+                is_streaming=self.is_streaming,
+                return_length=self.return_length
+            )
+
             return agent
         except (ModuleNotFoundError, AttributeError) as _:
             raise ValueError(f"エージェントが見つかりません: {command}") from None
