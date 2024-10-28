@@ -56,7 +56,7 @@ agent = ClassifyAgent(user_info=user)
 
 from collections.abc import Iterator
 from importlib import import_module
-from typing import Literal
+from typing import cast, Literal
 
 from sc_system_ai.template.agent import Agent
 from sc_system_ai.template.ai_settings import llm
@@ -137,10 +137,12 @@ class Chat:
                     yield resp
         else:
             resp = next(agent.invoke(message))
+
             if type(resp) is dict:
-                yield str(resp["output"])
-            elif type(resp) is str:
-                yield resp
+                if "error" in resp:
+                    yield cast(str, resp["error"])
+                else:
+                    yield cast(str, resp["output"])
 
     def _call_agent(self, command: AGENT) -> Agent:
         try:
