@@ -10,11 +10,12 @@ import logging
 from collections.abc import Iterator
 from queue import Queue
 from threading import Thread
-from typing import Any
+from typing import Any, TypedDict, TypeGuard
 
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain.tools import BaseTool
 from langchain_community.tools import DuckDuckGoSearchRun
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_openai import AzureChatOpenAI
 
 from sc_system_ai.agents.tools import magic_function, search_duckduckgo
@@ -110,6 +111,14 @@ agent_info = """
 -------------------
 """
 
+# Agentのレスポンスの型
+class AgentResponse(TypedDict, total=False):
+    """Agentのレスポンスの型"""
+    chat_history: list[HumanMessage | AIMessage]
+    messages: str
+    output: str
+    error: str
+
 # Agentクラスの作成
 class Agent:
     """
@@ -131,6 +140,7 @@ class Agent:
         self.llm = llm
         self.user_info = user_info if user_info is not None else User()
 
+        self.result: AgentResponse
         self._is_streaming = is_streaming
         self._return_length = return_length
         self.queue: Queue = Queue()
@@ -198,7 +208,7 @@ class Agent:
         """ツールを設定する関数"""
         self.tool.set_tools(tools)
 
-    def invoke(self, message: str) -> Iterator[str | dict[str, Any]]:
+    def invoke(self, message: str) -> Iterator[str | AgentResponse]:
         """
         エージェントを実行する関数
 
@@ -226,7 +236,6 @@ class Agent:
             tools=self.tool.tools,
             callbacks= [self.handler] if self._is_streaming else None
         )
-        self.result: dict[str, Any] = {}
 
         if self._is_streaming:
             yield from self._streaming_invoke(message)
@@ -241,13 +250,27 @@ class Agent:
         try: # エージェントの実行
             logger.info("エージェントの実行を開始します。\n-------------------\n")
             logger.debug(f"最終的なプロンプト: {self.prompt_template.full_prompt.messages}")
-            self.result = self.agent_executor.invoke({
+            resp = self.agent_executor.invoke({
                 "chat_history": self.user_info.conversations.format_conversation(),
                 "messages": message,
             })
+
+            if self._response_checker(resp):
+                self.result = resp
+            else:
+                logger.error("エージェントの実行結果取得に失敗しました。")
+                logger.debug(f"エージェントの実行結果: {resp}")
+                raise RuntimeError("エージェントの実行結果取得に失敗しました。")
         except Exception as e:
             logger.error(f"エージェントの実行に失敗しました。エラー内容: {e}")
             self.result = {"error": f"エージェントの実行に失敗しました。エラー内容: {e}"}
+
+    def _response_checker(self, response: Any) -> TypeGuard[AgentResponse]:
+        """レスポンスの型チェック"""
+        if type(response) is dict:
+            if all(key in response for key in ["chat_history", "messages", "output"]):
+                return True
+        return False
 
     def _streaming_invoke(self, message: str) -> Iterator[str]:
         phrase = ""
@@ -273,12 +296,12 @@ class Agent:
             if thread and thread.is_alive():
                 thread.join()
 
-    def get_response(self) -> dict | str:
+    def get_response(self) -> AgentResponse:
         """エージェントのレスポンスを取得する関数"""
         try:
             resp = self.result
         except AttributeError:
-            return "エージェントの実行が行われていません。"
+            return {"error": "エージェントの実行結果がありません。"}
         else:
             return resp
 

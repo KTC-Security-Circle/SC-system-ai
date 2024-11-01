@@ -56,7 +56,7 @@ agent = ClassifyAgent(user_info=user)
 
 from collections.abc import Iterator
 from importlib import import_module
-from typing import Literal, cast
+from typing import Literal
 
 from sc_system_ai.template.agent import Agent
 from sc_system_ai.template.ai_settings import llm
@@ -140,9 +140,9 @@ class Chat:
 
             if type(resp) is dict:
                 if "error" in resp:
-                    yield cast(str, resp["error"])
+                    yield resp["error"]
                 else:
-                    yield cast(str, resp["output"])
+                    yield resp["output"]
 
     def _call_agent(self, command: AGENT) -> Agent:
         try:
@@ -234,7 +234,7 @@ if __name__ == "__main__":
     resp = next(chat.invoke(message=message, command="dummy"))
     print(resp)
 
-    chat.is_streaming = True
-    # ストリーミング呼び出し
-    for r in chat.invoke(message=message, command="dummy"):
-        print(r)
+    # chat.is_streaming = True
+    # # ストリーミング呼び出し
+    # for r in chat.invoke(message=message, command="dummy"):
+    #     print(r)
