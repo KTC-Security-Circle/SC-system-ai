@@ -2,6 +2,7 @@ import logging
 from typing import Literal
 
 from langchain_core.tools import BaseTool
+from langchain_openai import AzureChatOpenAI
 from pydantic import BaseModel, Field
 
 from sc_system_ai.template.ai_settings import llm
@@ -31,7 +32,7 @@ class Output(BaseModel):
 def keyword_similarity(
         sentence: str,
         keywords: list[str],
-        llm = llm
+        llm: AzureChatOpenAI = llm
     ) -> str:
     requiremments_prompt = f"""文章と単語のリストを与えます。
     条件に従いリストの中から文章に最も関連性が高い単語と類似度を教えてください。
@@ -42,11 +43,15 @@ def keyword_similarity(
     リスト:
     [{",".join(keywords)}]
     """
-    llm = llm.with_structured_output(Output)
-    result = llm.invoke(requiremments_prompt)
+    model = llm.with_structured_output(Output)
+    result = model.invoke(requiremments_prompt)
 
-    logger.debug(f"キーワード類似度の結果: {result}")
-    return result.word if result.similarity_score > SIMILARITY_THRESHOLD else ""
+    if isinstance(result, Output):
+        logger.info(f"類似度スコア: {result.similarity_score}")
+        return result.word if result.similarity_score > SIMILARITY_THRESHOLD else ""
+    else:
+        logger.error("出力の構造化に失敗しました")
+        raise BaseException
 
 def classify_role_similarity(
         user_input: str,
@@ -150,5 +155,5 @@ if __name__ == "__main__":
     }
     """
 
-    input = "遅刻した"
+    input = "甲子園に行きたい"
     print(classify_role.invoke({"user_input": input}))

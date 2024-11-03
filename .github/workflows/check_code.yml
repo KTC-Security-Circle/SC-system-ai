@@ -1,0 +1,36 @@
+name: Check Code
+on: 
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  run-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          poetry install --with=dev
+
+      - name: Lint with Ruff
+        run: |
+          poetry run ruff check src/ --output-format=github
+
+      - name: Lint with Mypy
+        run: |
+          poetry run mypy src/ --ignore-missing-imports

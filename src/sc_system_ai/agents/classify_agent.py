@@ -43,13 +43,13 @@ class ClassifyAgent(Agent):
         super().set_assistant_info(self.assistant_info)
         self.set_tools(classify_agent_tools)
 
-    def set_tools(self, tools):
+    def set_tools(self, tools: list) -> None:
         # エージェント呼び出しツールにユーザー情報を設定
         for tool in tools:
             if isinstance(tool, CallingAgent):
                 tool.set_user_info(self.user_info)
 
-        self.tool.set_tools(tools)
+        super().set_tools(tools)
 
 if __name__ == "__main__":
     from sc_system_ai.logging_config import setup_logging

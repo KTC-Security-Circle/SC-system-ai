@@ -21,7 +21,7 @@ import logging
 from langchain.globals import set_verbose
 
 
-def setup_logging():
+def setup_logging() -> None:
     # ロギングの設定
     logging.basicConfig(
         level=logging.INFO,

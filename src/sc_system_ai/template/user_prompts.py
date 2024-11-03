@@ -44,6 +44,8 @@ print(user.conversations.get_conversations())
 ```
 """
 
+from typing import Any
+
 from langchain_core.messages import AIMessage, HumanMessage
 from pydantic import BaseModel, Field
 
@@ -60,9 +62,9 @@ class ConversationHistory(BaseModel):
     """会話履歴を保持するクラス"""
     conversations: list[Conversation] = Field(default_factory=list, description="会話履歴のリスト")
 
-    def format_conversation(self) -> str:
+    def format_conversation(self) -> list:
         """会話履歴をLangChainの会話履歴の形に整形して返す関数"""
-        chat_history = []
+        chat_history: list[HumanMessage | AIMessage] = []
         for conversation in self.conversations:
             if conversation.role == "human":
                 chat_history.append(HumanMessage(conversation.content))
@@ -74,7 +76,7 @@ class ConversationHistory(BaseModel):
         """会話履歴を取得する関数"""
         return [(conversation.role, conversation.content) for conversation in self.conversations]
 
-    def add_conversation(self, role: str, content: str):
+    def add_conversation(self, role: str, content: str) -> None:
         """
         会話履歴に新しい発言を追加する関数
 
@@ -87,7 +89,7 @@ class ConversationHistory(BaseModel):
         new_conversation = Conversation(role=role, content=content)
         self.conversations.append(new_conversation)
 
-    def add_conversations_list(self, conversations: list[tuple[str, str]]):
+    def add_conversations_list(self, conversations: list[tuple[str, str]]) -> None:
         """
         会話履歴にリスト形式の会話を追加する関数
         role: 発言者の役割 (human または ai)
@@ -128,9 +130,17 @@ class User(BaseModel):
     def __str__(self) -> str:
         return f"name: {self.name}, major: {self.major}, conversation: {self.conversations.get_conversations()}"
 
-    def update_user(self, **kwags) -> 'User':
+    def update_user(
+            self,
+            name: str | None = None,
+            major: str | None = None,
+            **kwargs: Any
+        ) -> 'User':
         """ユーザーの情報を更新する関数"""
-        for key, value in kwags.items():
+        name = name if name is not None else self.name
+        major = major if major is not None else self.major
+
+        for key, value in kwargs.items():
             setattr(self, key, value)
         return self
 
@@ -148,12 +158,11 @@ class UserPromptTemplate:
         str: ユーザー情報のプロンプトテンプレート
     """
     def __init__(self, user_info: User | None = None):
-        self.user_info = user_info
+        self.user_info = user_info if user_info is not None else User()
         if user_info is not None:
             self.user_prompt_template = self._format()
         else:
-            self.user_prompt_template = None
-
+            self.user_prompt_template = ""
 
     def __str__(self) -> str:
         if self.user_prompt_template is not None:
@@ -167,7 +176,7 @@ class UserPromptTemplate:
 
     def create_user_prompt_template(self, user_name: str, user_major: str) -> str:
         """ユーザー情報のプロンプトテンプレートを生成する関数"""
-        self.user_info = User(user_name, user_major)
+        self.user_info = User(name=user_name, major=user_major)
         self.user_prompt_template = self._format()
         return self.user_prompt_template
 

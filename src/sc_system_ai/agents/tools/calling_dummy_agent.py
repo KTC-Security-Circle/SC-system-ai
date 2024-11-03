@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class CallingDummyAgent(CallingAgent):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.set_tool_info(
             name="calling_dummy_agent",

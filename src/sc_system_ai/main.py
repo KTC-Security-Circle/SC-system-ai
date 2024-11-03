@@ -54,7 +54,7 @@ agent = ClassifyAgent(user_info=user)
 ```
 """
 
-from typing import Type, Literal, Iterator
+from collections.abc import Iterator
 from importlib import import_module
 from typing import Literal
 
@@ -94,7 +94,7 @@ class Chat:
         self,
         user_name: str,
         user_major: str,
-        conversation: list[tuple[str, str]] = [],
+        conversation: list[tuple[str, str]] | None = None,
         is_streaming: bool = True,
         return_length: int = 5
     ) -> None:
@@ -130,36 +130,44 @@ class Chat:
         - dummy: ダミーエージェント
         """
         agent = self._call_agent(command)
-        
+
         if self.is_streaming:
-            yield from agent.invoke(message)
+            for resp in agent.invoke(message):
+                if type(resp) is str:
+                    yield resp
         else:
             resp = next(agent.invoke(message))
-            yield resp["output"] if type(resp) is dict else resp
 
-    def _call_agent(self, command: AGENT) -> Type[Agent]:
-        try:  
-            module_name = f"sc_system_ai.agents.{command}_agent"  
-            class_name = f"{command.capitalize()}Agent"  
-            module = import_module(module_name)  
+            if type(resp) is dict:
+                if "error" in resp:
+                    yield resp["error"]
+                else:
+                    yield resp["output"]
+
+    def _call_agent(self, command: AGENT) -> Agent:
+        try:
+            module_name = f"sc_system_ai.agents.{command}_agent"
+            class_name = f"{command.capitalize()}Agent"
+            module = import_module(module_name)
             agent_class = getattr(module, class_name)
 
-            if self.is_streaming:  
-                agent = agent_class(
-                    llm=llm,
-                    user_info=self.user,
-                    is_streaming=self.is_streaming,
-                    return_length=self.return_length
-                )
+            agent = agent_class(
+                llm=llm,
+                user_info=self.user,
+                is_streaming=self.is_streaming,
+                return_length=self.return_length
+            )
+
+            if isinstance(agent, Agent):
+                return agent
             else:
-                agent = agent_class(llm=llm, user_info=self.user)
-            return agent
-        except (ModuleNotFoundError, AttributeError):  
-            raise ValueError(f"エージェントが見つかりません: {command}")  
+                raise ValueError
+        except (ModuleNotFoundError, AttributeError, ValueError) as _:
+            raise ValueError(f"エージェントが見つかりません: {command}") from None
 
 
 
-def static_chat():
+def static_chat() -> None:
     # ユーザー情報
     user_name = "hogehoge"
     user_major = "fugafuga専攻"
@@ -182,7 +190,7 @@ def static_chat():
 
 
 
-def streaming_chat():
+def streaming_chat() -> None:
     # ユーザー情報
     user_name = "hogehoge"
     user_major = "fugafuga専攻"
@@ -207,7 +215,7 @@ def streaming_chat():
 if __name__ == "__main__":
     from sc_system_ai.logging_config import setup_logging
     setup_logging()
-    
+
     # static_chat()
     # streaming_chat()
 
@@ -221,14 +229,12 @@ if __name__ == "__main__":
         is_streaming=False,
     )
     message = "私の名前と専攻は何ですか？"
-    
 
     # 通常呼び出し
     resp = next(chat.invoke(message=message, command="dummy"))
     print(resp)
 
-    chat.is_streaming = True
-    # ストリーミング呼び出し
-    for r in chat.invoke(message=message, command="dummy"):
-        print(r)
-
+    # chat.is_streaming = True
+    # # ストリーミング呼び出し
+    # for r in chat.invoke(message=message, command="dummy"):
+    #     print(r)

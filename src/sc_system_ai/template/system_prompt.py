@@ -36,7 +36,7 @@ class PromptTemplate:
 
         self.full_prompt = self.create_prompt(assistant_info=self.assistant_info, user_info=self.user_info)
 
-    def create_prompt(self, assistant_info: str | None = None, user_info: User | None = None):
+    def create_prompt(self, assistant_info: str | None = None, user_info: User | None = None) -> ChatPromptTemplate:
         """フルのシステムプロンプトを作成する関数"""
         if assistant_info is not None:
             self.assistant_info = assistant_info
@@ -56,11 +56,12 @@ class PromptTemplate:
         ])
         return self.full_prompt
 
-    def get_prompt(self):
+    def get_prompt(self) -> list:
         """フルのシステムプロンプトを取得する関数"""
+        print(type(self.full_prompt.messages))
         return self.full_prompt.messages
 
-    def display_prompt(self):
+    def display_prompt(self) -> None:
         """プロンプトを表示する関数"""
         print(f'prompts: {self.full_prompt.messages} \ninput_variables: {self.full_prompt.input_variables}')
 
@@ -73,3 +74,4 @@ if __name__ == "__main__":
     print(user)
     prompt = PromptTemplate(user_info=user)
     print(prompt.full_prompt)
+    print(prompt.get_prompt())
