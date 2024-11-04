@@ -161,11 +161,11 @@ class Chat:
         """
         self._call_agent(command)
         if self.is_streaming:
-            for resp in self.agent.invoke(message):
+            for resp in self._agent.invoke(message):
                 if type(resp) is str:
                     yield resp
         else:
-            resp = next(self.agent.invoke(message))
+            resp = next(self._agent.invoke(message))
 
             if type(resp) is dict:
                 if "error" in resp:
