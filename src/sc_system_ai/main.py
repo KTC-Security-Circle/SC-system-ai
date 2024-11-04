@@ -5,6 +5,8 @@
 - ユーザー名(str)
 - 専攻(str)
 - 会話履歴(List[Tuple[str, str]])
+- is_streaming(bool): ストリーミングモードの有無. デフォルトはTrue
+- return_length(int): ストリーミングモード時の返答数. デフォルトは5
 
 ```python
 # ユーザー情報
@@ -22,11 +24,12 @@ Chatクラスをインポートし、エージェントを呼び出せます。
 chat = Chat(
     user_name=user_name,
     user_major=user_major,
-    conversation=conversation
+    conversation=conversation,
+    is_streaming=False,
 )
 
 message = "私の名前と専攻は何ですか？"
-resp = chat.invoke(message=message)
+resp = next(chat.invoke(message=message))
 ```
 
 
@@ -40,11 +43,11 @@ user_info = User(name=user_name, major=user_major)
 user.conversations.add_conversations_list(conversation)
 
 # エージェントの設定
-agent = Agent(user_info=user_info)
+agent = Agent(user_info=user_info, is_streaming=False)
 
 # メッセージを送信
 message = "私の名前と専攻は何ですか？"
-resp = agent.invoke(message)
+resp = next(agent.invoke(message))
 ```
 
 各エージェントはagentsディレクトリに格納されています。
@@ -86,11 +89,19 @@ class Chat:
             conversation=[
                 ("human", "こんにちは!"),
                 ("ai", "本日はどのようなご用件でしょうか？")
-            ]
+            ],
+            is_streaming=False
         )
 
+        # 通常呼び出し
         message = "私の名前と専攻は何ですか？"
-        resp = chat.invoke(message=message)
+        resp = next(chat.invoke(message=message))
+
+        # ストリーミングモード
+        is_streaming = True
+        for r in chat.invoke(message=message, command="dummy"):
+            print(r)
+        chat.agent.get_response()
         ```
     """
     def __init__(
@@ -141,7 +152,7 @@ class Chat:
 
         コマンドでエージェントを指定して、エージェントを呼び出す場合。
         ```python
-        resp = chat.invoke(message="私の名前と専攻は何ですか？", command="dummy")
+        resp = next(chat.invoke(message="私の名前と専攻は何ですか？", command="dummy"))
         ```
 
         呼び出し可能なエージェント:
