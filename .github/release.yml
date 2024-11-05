@@ -3,7 +3,7 @@ changelog:
     # リリースノートから除外したいユーザー
     authors:
       - github-actions
-    exclude_labels:
+    labels:
       - "chore"
   categories:
     - title: New Features 🎉
