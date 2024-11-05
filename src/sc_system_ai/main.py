@@ -119,15 +119,14 @@ class Chat:
         self.user.conversations.add_conversations_list(conversation)
         self.is_streaming = is_streaming
         self.return_length = return_length
-        self._agent: Agent
+        self._agent: Agent | None = None
 
     @property
     def agent(self) -> Agent:
-        try:
-            return self._agent
-        except AttributeError:
-            logger.error("エージェントが呼び出されていません")
-            raise AttributeError("エージェントが呼び出されていません") from None
+        if self._agent is None:
+            logger.error("エージェントが設定されていません")
+            raise ValueError("エージェントが設定されていません")
+        return self._agent
 
     @agent.setter
     def agent(self, agent: Agent) -> None:
@@ -161,11 +160,11 @@ class Chat:
         """
         self._call_agent(command)
         if self.is_streaming:
-            for resp in self._agent.invoke(message):
+            for resp in self.agent.invoke(message):
                 if type(resp) is str:
                     yield resp
         else:
-            resp = next(self._agent.invoke(message))
+            resp = next(self.agent.invoke(message))
 
             if type(resp) is dict:
                 if "error" in resp:
