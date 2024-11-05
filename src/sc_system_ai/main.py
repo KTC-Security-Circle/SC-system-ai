@@ -5,6 +5,8 @@
 - ユーザー名(str)
 - 専攻(str)
 - 会話履歴(List[Tuple[str, str]])
+- is_streaming(bool): ストリーミングモードの有無. デフォルトはTrue
+- return_length(int): ストリーミングモード時の返答数. デフォルトは5
 
 ```python
 # ユーザー情報
@@ -22,11 +24,12 @@ Chatクラスをインポートし、エージェントを呼び出せます。
 chat = Chat(
     user_name=user_name,
     user_major=user_major,
-    conversation=conversation
+    conversation=conversation,
+    is_streaming=False,
 )
 
 message = "私の名前と専攻は何ですか？"
-resp = chat.invoke(message=message)
+resp = next(chat.invoke(message=message))
 ```
 
 
@@ -40,11 +43,11 @@ user_info = User(name=user_name, major=user_major)
 user.conversations.add_conversations_list(conversation)
 
 # エージェントの設定
-agent = Agent(user_info=user_info)
+agent = Agent(user_info=user_info, is_streaming=False)
 
 # メッセージを送信
 message = "私の名前と専攻は何ですか？"
-resp = agent.invoke(message)
+resp = next(agent.invoke(message))
 ```
 
 各エージェントはagentsディレクトリに格納されています。
@@ -54,6 +57,7 @@ agent = ClassifyAgent(user_info=user)
 ```
 """
 
+import logging
 from collections.abc import Iterator
 from importlib import import_module
 from typing import Literal
@@ -61,6 +65,8 @@ from typing import Literal
 from sc_system_ai.template.agent import Agent
 from sc_system_ai.template.ai_settings import llm
 from sc_system_ai.template.user_prompts import User
+
+logger = logging.getLogger(__name__)
 
 AGENT = Literal["classify", "dummy"]
 
@@ -83,11 +89,19 @@ class Chat:
             conversation=[
                 ("human", "こんにちは!"),
                 ("ai", "本日はどのようなご用件でしょうか？")
-            ]
+            ],
+            is_streaming=False
         )
 
+        # 通常呼び出し
         message = "私の名前と専攻は何ですか？"
-        resp = chat.invoke(message=message)
+        resp = next(chat.invoke(message=message))
+
+        # ストリーミングモード
+        is_streaming = True
+        for r in chat.invoke(message=message, command="dummy"):
+            print(r)
+        chat.agent.get_response()
         ```
     """
     def __init__(
@@ -105,6 +119,21 @@ class Chat:
         self.user.conversations.add_conversations_list(conversation)
         self.is_streaming = is_streaming
         self.return_length = return_length
+        self._agent: Agent | None = None
+
+    @property
+    def agent(self) -> Agent:
+        if self._agent is None:
+            logger.error("エージェントが設定されていません")
+            raise ValueError("エージェントが設定されていません")
+        return self._agent
+
+    @agent.setter
+    def agent(self, agent: Agent) -> None:
+        if not isinstance(agent, Agent):
+            logger.error("agentにはAgentクラス、またはそのサブクラスを代入してください")
+            raise ValueError("agentにはAgentクラス、またはそのサブクラスを代入してください")
+        self._agent = agent
 
     def invoke(
         self,
@@ -122,21 +151,20 @@ class Chat:
 
         コマンドでエージェントを指定して、エージェントを呼び出す場合。
         ```python
-        resp = chat.invoke(message="私の名前と専攻は何ですか？", command="dummy")
+        resp = next(chat.invoke(message="私の名前と専攻は何ですか？", command="dummy"))
         ```
 
         呼び出し可能なエージェント:
         - classify: 分類エージェント
         - dummy: ダミーエージェント
         """
-        agent = self._call_agent(command)
-
+        self._call_agent(command)
         if self.is_streaming:
-            for resp in agent.invoke(message):
+            for resp in self.agent.invoke(message):
                 if type(resp) is str:
                     yield resp
         else:
-            resp = next(agent.invoke(message))
+            resp = next(self.agent.invoke(message))
 
             if type(resp) is dict:
                 if "error" in resp:
@@ -144,25 +172,21 @@ class Chat:
                 else:
                     yield resp["output"]
 
-    def _call_agent(self, command: AGENT) -> Agent:
+    def _call_agent(self, command: AGENT) -> None:
         try:
             module_name = f"sc_system_ai.agents.{command}_agent"
             class_name = f"{command.capitalize()}Agent"
             module = import_module(module_name)
             agent_class = getattr(module, class_name)
 
-            agent = agent_class(
+            self.agent = agent_class(
                 llm=llm,
                 user_info=self.user,
                 is_streaming=self.is_streaming,
                 return_length=self.return_length
             )
-
-            if isinstance(agent, Agent):
-                return agent
-            else:
-                raise ValueError
-        except (ModuleNotFoundError, AttributeError, ValueError) as _:
+        except (ModuleNotFoundError, AttributeError, ValueError):
+            logger.error(f"エージェントが見つかりません: {command}")
             raise ValueError(f"エージェントが見つかりません: {command}") from None
 
 
@@ -230,11 +254,17 @@ if __name__ == "__main__":
     )
     message = "私の名前と専攻は何ですか？"
 
-    # 通常呼び出し
-    resp = next(chat.invoke(message=message, command="dummy"))
-    print(resp)
+    try:
+        resp = chat.agent.get_response()
+    except Exception:
+        pass
 
-    # chat.is_streaming = True
-    # # ストリーミング呼び出し
-    # for r in chat.invoke(message=message, command="dummy"):
-    #     print(r)
+    # # 通常呼び出し
+    # resp = next(chat.invoke(message=message, command="dummy"))
+    # print(resp)
+
+    # ストリーミング呼び出し
+    chat.is_streaming = True
+    for r in chat.invoke(message=message, command="dummy"):
+        print(r)
+    chat.agent.get_response()
