@@ -433,13 +433,13 @@ files = [
 
 [[package]]
 name = "duckduckgo-search"
-version = "6.3.3"
+version = "6.3.4"
 description = "Search for words, documents, images, news, maps and text translation using the DuckDuckGo.com search engine."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "duckduckgo_search-6.3.3-py3-none-any.whl", hash = "sha256:63e5d6b958bd532016bc8a53e8b18717751bf7ef51b1c83e59b9f5780c79e64c"},
-    {file = "duckduckgo_search-6.3.3.tar.gz", hash = "sha256:4d49508f01f85c8675765fdd4cc25eedbb3450e129b35209897fded874f6568f"},
+    {file = "duckduckgo_search-6.3.4-py3-none-any.whl", hash = "sha256:0c18279fb43cbb43e51a251a2133cd0be09604f5a0395fe05409e213bed0cf00"},
+    {file = "duckduckgo_search-6.3.4.tar.gz", hash = "sha256:71317d0dee393cb2c0fb8d2eedc76bba0d8c93c752fe97be0030c39b89fd05f9"},
 ]
 
 [package.dependencies]
@@ -2466,4 +2466,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "ab72a04bab5b9d1eaf74c95c93bd76d9ce18e6df2d0bb996e38c0b2f034c9c1c"
+content-hash = "16db3dbd3b488e0f48a113e345f9f15e3b6a801f55d676ebcf944bd7d75e28d6"
