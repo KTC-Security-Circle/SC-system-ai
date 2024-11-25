@@ -12,7 +12,7 @@ python = "^3.10"
 langchain = "^0.3.7"
 langchain-community = "^0.3.7"
 langchain-openai = "^0.2.8"
-duckduckgo-search = "^6.3.5"
+duckduckgo-search = "^6.3.6"
 azure-cosmos = "^4.7.0"
 
 
