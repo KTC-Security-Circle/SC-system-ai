@@ -221,17 +221,17 @@ aio = ["aiohttp (>=3.0)"]
 
 [[package]]
 name = "azure-cosmos"
-version = "4.7.0"
+version = "4.9.0"
 description = "Microsoft Azure Cosmos Client Library for Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "azure-cosmos-4.7.0.tar.gz", hash = "sha256:72d714033134656302a2e8957c4b93590673bd288b0ca60cb123e348ae99a241"},
-    {file = "azure_cosmos-4.7.0-py3-none-any.whl", hash = "sha256:03d8c7740ddc2906fb16e07b136acc0fe6a6a02656db46c5dd6f1b127b58cc96"},
+    {file = "azure_cosmos-4.9.0-py3-none-any.whl", hash = "sha256:3b60eaa01a16a857d0faf0cec304bac6fa8620a81bc268ce760339032ef617fe"},
+    {file = "azure_cosmos-4.9.0.tar.gz", hash = "sha256:c70db4cbf55b0ff261ed7bb8aa325a5dfa565d3c6eaa43d75d26ae5e2ad6d74f"},
 ]
 
 [package.dependencies]
-azure-core = ">=1.25.1"
+azure-core = ">=1.30.0"
 typing-extensions = ">=4.6.0"
 
 [[package]]
@@ -2467,4 +2467,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "6967dec4fb480ab2ee6c2f951d97b30977907edf93f9c6445a544ad90291113e"
+content-hash = "2060242c064362cac3cc41d647dba7353039cc676425a8c8ea7b1727b1d8ad99"
