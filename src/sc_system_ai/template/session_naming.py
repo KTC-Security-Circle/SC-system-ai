@@ -32,8 +32,8 @@ def create_prompt(conversation: list[tuple[str, str]]) -> str:
         prompt += f"{role}: {message}{linesep}"
     return prompt
 
-def session_naming(history: list[tuple[str, str]]) -> str:
-    prompt = create_prompt(history)
+def session_naming(conversation: list[tuple[str, str]]) -> str:
+    prompt = create_prompt(conversation)
     model = llm.with_structured_output(Output)
 
     resullt = model.invoke(prompt)
