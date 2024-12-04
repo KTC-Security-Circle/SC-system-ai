@@ -11,7 +11,7 @@ packages = [{include = "sc_system_ai", from = "src"}]
 python = "^3.10"
 langchain = "^0.3.9"
 langchain-community = "^0.3.7"
-langchain-openai = "^0.2.8"
+langchain-openai = "^0.2.11"
 duckduckgo-search = "^6.3.7"
 azure-cosmos = "^4.9.0"
 
