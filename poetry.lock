@@ -982,13 +982,13 @@ orjson = ">=3.10.1"
 
 [[package]]
 name = "langsmith"
-version = "0.1.146"
+version = "0.1.147"
 description = "Client library to connect to the LangSmith LLM Tracing and Evaluation Platform."
 optional = false
 python-versions = "<4.0,>=3.8.1"
 files = [
-    {file = "langsmith-0.1.146-py3-none-any.whl", hash = "sha256:9d062222f1a32c9b047dab0149b24958f988989cd8d4a5f9139ff959a51e59d8"},
-    {file = "langsmith-0.1.146.tar.gz", hash = "sha256:ead8b0b9d5b6cd3ac42937ec48bdf09d4afe7ca1bba22dc05eb65591a18106f8"},
+    {file = "langsmith-0.1.147-py3-none-any.whl", hash = "sha256:7166fc23b965ccf839d64945a78e9f1157757add228b086141eb03a60d699a15"},
+    {file = "langsmith-0.1.147.tar.gz", hash = "sha256:2e933220318a4e73034657103b3b1a3a6109cc5db3566a7e8e03be8d6d7def7a"},
 ]
 
 [package.dependencies]
@@ -1000,6 +1000,9 @@ pydantic = [
 ]
 requests = ">=2,<3"
 requests-toolbelt = ">=1.0.0,<2.0.0"
+
+[package.extras]
+langsmith-pyo3 = ["langsmith-pyo3 (>=0.1.0rc2,<0.2.0)"]
 
 [[package]]
 name = "lxml"
@@ -2467,4 +2470,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "c27005d738ab0a7347484dac38962279f9103115d7551492eb2649b3604ad836"
+content-hash = "405dbead27b96b2242e4df0ea619b5f67e73d3bc2ed999cd16076b3cb8eef5fb"
