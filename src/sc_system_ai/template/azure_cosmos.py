@@ -134,19 +134,20 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             )
         return docs_and_scores
 
-    def read_all_documents(self) -> list[dict[str, Any]]:
+    def read_all_documents(self) -> list[Document]:
         """全てのdocumentsとIDを読み込む関数"""
         logger.info("全てのdocumentsを読み込みます")
         query = "SELECT c.id, c.text FROM c"
         items = list(self._container.query_items(
             query=query, enable_cross_partition_query=True)
         )
-        docs: list[dict] = []
+        docs: list[Document] = []
         for item in items:
-            id = item["id"]
             text = item["text"]
-            docs.append({"id": id, "texts": text})
-        logger.debug(f"{docs[0]['id']}, \n\nlength: {len(docs)}")
+            _id = item["id"]
+            docs.append(
+                Document(page_content=text, metadata={"id": _id})
+            )
         return docs
 
     def get_source_by_id(self, id: str) -> str:
