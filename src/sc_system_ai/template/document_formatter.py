@@ -8,8 +8,8 @@ from langchain_text_splitters import (
     RecursiveCharacterTextSplitter,
 )
 
-CHUNK_SIZE = 10
-CHUNK_OVERLAP = 5
+CHUNK_SIZE = 1000
+CHUNK_OVERLAP = 50
 
 def _max_level(text: str) -> int:
     """Markdownのヘッダーの最大レベルを返す関数"""

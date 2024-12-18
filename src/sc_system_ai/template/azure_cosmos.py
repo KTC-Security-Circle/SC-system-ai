@@ -79,21 +79,74 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             create_container=create_container,
         )
 
-    def read_all_documents(self) -> list[Document]:
-        """全てのdocumentsを読み込む関数"""
+    def _similarity_search_with_score(
+        self,
+        embeddings: list[float],
+        k: int = 1,
+        pre_filter: dict | None = None,
+        with_embedding: bool = False
+    ) -> list[tuple[Document, float]]:
+        query = "SELECT "
+
+        # If limit_offset_clause is not specified, add TOP clause
+        if pre_filter is None or pre_filter.get("limit_offset_clause") is None:
+            query += "TOP @limit "
+
+        query += (
+            "c.id, c[@embeddingKey], c.text, c.metadata, "
+            "VectorDistance(c[@embeddingKey], @embeddings) AS SimilarityScore FROM c"
+        )
+
+        # Add where_clause if specified
+        if pre_filter is not None and pre_filter.get("where_clause") is not None:
+            query += " {}".format(pre_filter["where_clause"])
+
+        query += " ORDER BY VectorDistance(c[@embeddingKey], @embeddings)"
+
+        # Add limit_offset_clause if specified
+        if pre_filter is not None and pre_filter.get("limit_offset_clause") is not None:
+            query += " {}".format(pre_filter["limit_offset_clause"])
+        parameters = [
+            {"name": "@limit", "value": k},
+            {"name": "@embeddingKey", "value": self._embedding_key},
+            {"name": "@embeddings", "value": embeddings},
+        ]
+
+        docs_and_scores = []
+
+        items = list(
+            self._container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+        for item in items:
+            text = item["text"]
+            metadata = item["metadata"]
+
+            # idをmetadataに追加
+            metadata["id"] = item["id"]
+
+            score = item["SimilarityScore"]
+            if with_embedding:
+                metadata[self._embedding_key] = item[self._embedding_key]
+            docs_and_scores.append(
+                (Document(page_content=text, metadata=metadata), score)
+            )
+        return docs_and_scores
+
+    def read_all_documents(self) -> list[dict[str, Any]]:
+        """全てのdocumentsとIDを読み込む関数"""
         logger.info("全てのdocumentsを読み込みます")
         query = "SELECT c.id, c.text FROM c"
         items = list(self._container.query_items(
-            query=query, enable_cross_partition_query=True))
-        docs = []
-        i = 1
+            query=query, enable_cross_partition_query=True)
+        )
+        docs: list[dict] = []
         for item in items:
+            id = item["id"]
             text = item["text"]
-            item["number"] = i
-            i += 1
-            docs.append(
-                Document(page_content=text, metadata=item))
-        logger.debug(f"{docs[0].page_content=}, \n\nlength: {len(docs)}")
+            docs.append({"id": id, "texts": text})
+        logger.debug(f"{docs[0]['id']}, \n\nlength: {len(docs)}")
         return docs
 
     def get_source_by_id(self, id: str) -> str:
@@ -118,9 +171,10 @@ if __name__ == "__main__":
     # results = cosmos_manager.read_all_documents()
     results = cosmos_manager.similarity_search(query, k=1)
     print(results[0])
+    print(results[0].metadata["id"])
 
     # idで指定したドキュメントのsourceを取得
-    ids = results[0].metadata["id"]
-    print(f"{ids=}")
-    doc = cosmos_manager.get_source_by_id(ids)
-    print(doc)
+    # ids = results[0].metadata["id"]
+    # print(f"{ids=}")
+    # doc = cosmos_manager.get_source_by_id(ids)
+    # print(doc)
