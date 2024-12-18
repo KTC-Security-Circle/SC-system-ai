@@ -153,9 +153,12 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
     def get_source_by_id(self, id: str) -> str:
         """idを指定してsourceを取得する関数"""
         logger.info(f"{id=}のsourceを取得します")
-        item = self._container.read_item(item=id, partition_key=id)
+        query = "SELECT c.text FROM c WHERE c.id = " + f"'{id}'"
+        item = self._container.query_items(
+            query=query, enable_cross_partition_query=True
+        ).next()
 
-        result = item.get("source")
+        result = item["text"]
         if type(result) is str:
             return result
         else:
@@ -175,7 +178,7 @@ if __name__ == "__main__":
     print(results[0].metadata["id"])
 
     # idで指定したドキュメントのsourceを取得
-    # ids = results[0].metadata["id"]
-    # print(f"{ids=}")
-    # doc = cosmos_manager.get_source_by_id(ids)
-    # print(doc)
+    ids = results[0].metadata["id"]
+    print(f"{ids=}")
+    doc = cosmos_manager.get_source_by_id(ids)
+    print(doc)
