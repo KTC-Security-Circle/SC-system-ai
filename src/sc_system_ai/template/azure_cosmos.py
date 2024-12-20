@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime
 from typing import Any, Literal
 
 from azure.cosmos import CosmosClient, PartitionKey
@@ -161,6 +162,31 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             metadata.append(doc.metadata)
         return docs, metadata
 
+    def update_document(
+        self,
+        id: str,
+        text: str,
+    ) -> str:
+        """データベースのdocumentを更新する関数"""
+        logger.info("documentを更新します")
+
+        # metadataのupdated_atを更新
+        query = "SELECT c.metadata FROM c WHERE c.id = " + f"'{id}'"
+        item = self._container.query_items(
+            query=query, enable_cross_partition_query=True
+        ).next()
+        metadata = item["metadata"]
+        metadata["updated_at"] = datetime.now().strftime("%Y-%m-%d")
+
+        to_upsert = {
+            "id": id,
+            "text": text,
+            self._embedding_key: self._embedding.embed_documents([text])[0],
+            "metadata": metadata,
+        }
+        self._container.upsert_item(body=to_upsert)
+        return id
+
     def read_all_documents(self) -> list[Document]:
         """全てのdocumentsとIDを読み込む関数"""
         logger.info("全てのdocumentsを読み込みます")
@@ -208,3 +234,9 @@ if __name__ == "__main__":
     # print(f"{ids=}")
     # doc = cosmos_manager.get_source_by_id(ids)
     # print(doc)
+
+    # documentを更新
+    text = """ストリーミングレスポンスに対応するためにジェネレータとして定義されています。
+エージェントが回答の生成を終えてからレスポンスを受け取ることも可能です。"""
+    _id = "c55bb571-498a-4db9-9da0-e9e35d46906b"
+    print(cosmos_manager.update_document(_id, text))
