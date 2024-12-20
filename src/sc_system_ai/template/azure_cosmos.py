@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any
+from typing import Any, Literal
 
 from azure.cosmos import CosmosClient, PartitionKey
 from dotenv import load_dotenv
@@ -11,6 +11,7 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 
 from sc_system_ai.template.ai_settings import embeddings
+from sc_system_ai.template.document_formatter import md_formatter, text_formatter
 
 load_dotenv()
 
@@ -134,6 +135,32 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             )
         return docs_and_scores
 
+    def create_document(
+        self,
+        text: str,
+        text_type: Literal["markdown", "plain"] = "markdown"
+    ) -> list[str]:
+        """データベースに新しいdocumentを作成する関数"""
+        logger.info("新しいdocumentを作成します")
+        texts, metadatas = self._division_document(
+            md_formatter(text) if text_type == "markdown" else text_formatter(text)
+        )
+        ids = self._insert_texts(texts, metadatas)
+        return ids
+
+    def _division_document(
+        self,
+        documents: list[Document]
+    ) -> tuple[list[str], list[dict[str, Any]]]:
+        """documentを分割する関数"""
+        logger.info("documentを分割します")
+        docs = []
+        metadata = []
+        for doc in documents:
+            docs.append(doc.page_content)
+            metadata.append(doc.metadata)
+        return docs, metadata
+
     def read_all_documents(self) -> list[Document]:
         """全てのdocumentsとIDを読み込む関数"""
         logger.info("全てのdocumentsを読み込みます")
@@ -165,20 +192,19 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             return "sourceが見つかりませんでした"
 
 
-
 if __name__ == "__main__":
     from sc_system_ai.logging_config import setup_logging
     setup_logging()
 
     cosmos_manager = CosmosDBManager()
-    query = "京都テック"
-    # results = cosmos_manager.read_all_documents()
-    results = cosmos_manager.similarity_search(query, k=1)
-    print(results[0])
-    print(results[0].metadata["id"])
+    # query = "京都テック"
+    # # results = cosmos_manager.read_all_documents()
+    # results = cosmos_manager.similarity_search(query, k=1)
+    # print(results[0])
+    # print(results[0].metadata["id"])
 
-    # idで指定したドキュメントのsourceを取得
-    ids = results[0].metadata["id"]
-    print(f"{ids=}")
-    doc = cosmos_manager.get_source_by_id(ids)
-    print(doc)
+    # # idで指定したドキュメントのsourceを取得
+    # ids = results[0].metadata["id"]
+    # print(f"{ids=}")
+    # doc = cosmos_manager.get_source_by_id(ids)
+    # print(doc)

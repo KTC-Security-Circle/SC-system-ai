@@ -9,7 +9,7 @@ from langchain_text_splitters import (
 )
 
 CHUNK_SIZE = 1000
-CHUNK_OVERLAP = 50
+CHUNK_OVERLAP = 200
 
 def _max_level(text: str) -> int:
     """Markdownのヘッダーの最大レベルを返す関数"""
