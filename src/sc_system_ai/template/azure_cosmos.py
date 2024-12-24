@@ -173,11 +173,17 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         # metadataのupdated_atを更新
         query = "SELECT c.metadata FROM c WHERE c.id = @id"
         parameters = [{"name": "@id", "value": id}]
-        item = self._container.query_items(
-            query=query,
-            parameters=cast(list[dict[str, Any]], parameters), # mypyがエラー吐くのでキャスト
-            enable_cross_partition_query=True
-        ).next()
+
+        try:
+            item = self._container.query_items(
+                query=query,
+                parameters=cast(list[dict[str, Any]], parameters), # mypyがエラー吐くのでキャスト
+                enable_cross_partition_query=True
+            ).next()
+        except StopIteration:
+            logger.error(f"{id=}のdocumentが見つかりませんでした")
+            return "documentが見つかりませんでした"
+
         metadata = item["metadata"]
         metadata["updated_at"] = datetime.now().strftime("%Y-%m-%d")
 
