@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from typing import Any
 
@@ -13,14 +14,8 @@ CHUNK_OVERLAP = 200
 
 def _max_level(text: str) -> int:
     """Markdownのヘッダーの最大レベルを返す関数"""
-    level = 0
-    for line in text.split("\n"):
-        if line.startswith("#"):
-            counter = 0
-            while line[counter] == "#":
-                counter += 1
-            level = max(level, counter)
-    return level
+    headers = re.findall(r"^#+", text, re.MULTILINE)
+    return max([len(h) for h in headers]) if headers else 0
 
 def markdown_splitter(
     text: str,
