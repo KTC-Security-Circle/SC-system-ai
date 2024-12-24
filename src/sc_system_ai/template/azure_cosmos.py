@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from azure.cosmos import CosmosClient, PartitionKey
 from dotenv import load_dotenv
@@ -171,9 +171,12 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         logger.info("documentを更新します")
 
         # metadataのupdated_atを更新
-        query = "SELECT c.metadata FROM c WHERE c.id = " + f"'{id}'"
+        query = "SELECT c.metadata FROM c WHERE c.id = @id"
+        parameters = [{"name": "@id", "value": id}]
         item = self._container.query_items(
-            query=query, enable_cross_partition_query=True
+            query=query,
+            parameters=cast(list[dict[str, Any]], parameters), # mypyがエラー吐くのでキャスト
+            enable_cross_partition_query=True
         ).next()
         metadata = item["metadata"]
         metadata["updated_at"] = datetime.now().strftime("%Y-%m-%d")
