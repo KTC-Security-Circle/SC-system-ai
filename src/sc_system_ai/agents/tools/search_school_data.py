@@ -54,13 +54,12 @@ class SearchSchoolDataTool(BaseTool):
         """use the tool."""
         logger.info(f"Search School Data Toolが次の値で呼び出されました: {search_word}")
         result = search_school_database_cosmos(search_word)
-        i = 1
         search_result = []
-        for doc in result:
+        for i, doc in enumerate(result):
             if hasattr(doc, 'page_content'):
                 search_result.append(
-                    f'・検索結果{i}は以下の通りです。\n{doc.page_content}\n参考URL: "{doc.metadata["source"]}"\n\n')
-                i += 1
+                    f'・検索結果{i + 1}は以下の通りです。\n{doc.page_content}\n参考URL: "{doc.metadata["id"]}"\n\n'
+                )
         return search_result
 
 
