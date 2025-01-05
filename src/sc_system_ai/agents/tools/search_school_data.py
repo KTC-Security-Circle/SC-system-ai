@@ -31,10 +31,6 @@ def search_school_database_cosmos(search_word: str, top_k: int = 2) -> list[Docu
     """学校に関する情報を検索する関数(現在のデータベースを参照)"""
     cosmos_manager = CosmosDBManager()
     docs = cosmos_manager.similarity_search(search_word, k=top_k)
-
-    for doc in docs:
-        source = cosmos_manager.get_source_by_id(doc.metadata["id"])
-        doc.metadata["source"] = source
     return docs
 
 
