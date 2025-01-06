@@ -39,5 +39,9 @@ def setup_logging() -> None:
     package_logger = logging.getLogger("sc_system_ai")
     package_logger.setLevel(logging.DEBUG)
 
+    # azure.coreのログメッセージをWARNING以上で出力する
+    azure_logger = logging.getLogger("azure.core")
+    azure_logger.setLevel(logging.WARNING)
+
     # langchainのログメッセージを出力する
     set_verbose(True)
