@@ -154,9 +154,7 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         documents: list[Document]
     ) -> tuple[list[str], list[dict[str, Any]]]:
         """documentを分割する関数"""
-        logger.info("documentを分割します")
-        docs = []
-        metadata = []
+        docs, metadata = [], []
         for doc in documents:
             docs.append(doc.page_content)
             metadata.append(doc.metadata)
