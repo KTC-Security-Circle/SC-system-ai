@@ -81,61 +81,6 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             create_container=create_container,
         )
 
-    def _similarity_search_with_score(
-        self,
-        embeddings: list[float],
-        k: int = 1,
-        pre_filter: dict | None = None,
-        with_embedding: bool = False
-    ) -> list[tuple[Document, float]]:
-        query = "SELECT "
-
-        # If limit_offset_clause is not specified, add TOP clause
-        if pre_filter is None or pre_filter.get("limit_offset_clause") is None:
-            query += "TOP @limit "
-
-        query += (
-            "c.id, c[@embeddingKey], c.text, c.metadata, "
-            "VectorDistance(c[@embeddingKey], @embeddings) AS SimilarityScore FROM c"
-        )
-
-        # Add where_clause if specified
-        if pre_filter is not None and pre_filter.get("where_clause") is not None:
-            query += " {}".format(pre_filter["where_clause"])
-
-        query += " ORDER BY VectorDistance(c[@embeddingKey], @embeddings)"
-
-        # Add limit_offset_clause if specified
-        if pre_filter is not None and pre_filter.get("limit_offset_clause") is not None:
-            query += " {}".format(pre_filter["limit_offset_clause"])
-        parameters = [
-            {"name": "@limit", "value": k},
-            {"name": "@embeddingKey", "value": self._embedding_key},
-            {"name": "@embeddings", "value": embeddings},
-        ]
-
-        docs_and_scores = []
-
-        items = list(
-            self._container.query_items(
-                query=query, parameters=parameters, enable_cross_partition_query=True
-            )
-        )
-        for item in items:
-            text = item["text"]
-            metadata = item["metadata"]
-
-            # idをmetadataに追加
-            metadata["id"] = item["id"]
-
-            score = item["SimilarityScore"]
-            if with_embedding:
-                metadata[self._embedding_key] = item[self._embedding_key]
-            docs_and_scores.append(
-                (Document(page_content=text, metadata=metadata), score)
-            )
-        return docs_and_scores
-
     def create_document(
         self,
         text: str,
@@ -230,11 +175,11 @@ if __name__ == "__main__":
     setup_logging()
 
     cosmos_manager = CosmosDBManager()
-    # query = "京都テック"
-    # # results = cosmos_manager.read_all_documents()
-    # results = cosmos_manager.similarity_search(query, k=1)
-    # print(results[0])
-    # print(results[0].metadata["id"])
+    query = "京都テック"
+    # results = cosmos_manager.read_all_documents()
+    results = cosmos_manager.similarity_search(query, k=1)
+    print(results[0])
+    print(results[0].metadata["id"])
 
     # # idで指定したドキュメントのsourceを取得
     # ids = results[0].metadata["id"]
@@ -242,8 +187,8 @@ if __name__ == "__main__":
     # doc = cosmos_manager.get_source_by_id(ids)
     # print(doc)
 
-    # documentを更新
-    text = """ストリーミングレスポンスに対応するためにジェネレータとして定義されています。
-エージェントが回答の生成を終えてからレスポンスを受け取ることも可能です。"""
-    _id = "c55bb571-498a-4db9-9da0-e9e35d46906b"
-    print(cosmos_manager.update_document(_id, text))
+#     # documentを更新
+#     text = """ストリーミングレスポンスに対応するためにジェネレータとして定義されています。
+# エージェントが回答の生成を終えてからレスポンスを受け取ることも可能です。"""
+#     _id = "c55bb571-498a-4db9-9da0-e9e35d46906b"
+#     print(cosmos_manager.update_document(_id, text))
