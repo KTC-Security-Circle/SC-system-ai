@@ -169,13 +169,16 @@ def md_formatter(
 def text_formatter(
     text: str,
     separator: str = "\n\n",
+    title: str | None = None,
+    metadata: dict[str, Any] | None = None,
     chunk_size: int = CHUNK_SIZE,
     chunk_overlap: int = CHUNK_OVERLAP,
-    **kwargs: Any
 ) -> list[Document]:
     """テキストをフォーマットする関数
     Args:
         text (str): テキスト
+        title (str, optional): タイトル.
+        metadata (dict[str, Any], optional): メタデータ.
         separator (str, optional): 区切り文字.
         chunk_size (int, optional): 分割するサイズ.
         chunk_overlap (int, optional): オーバーラップのサイズ.
@@ -190,9 +193,9 @@ def text_formatter(
     )
     return add_metadata(
         docs,
-        title=docs[0].page_content,
-        with_section_number=True,
-        **kwargs
+        title=docs[0].page_content if title is None else title,
+        with_section_number=True if len(docs) > 1 else False,
+        **metadata if metadata is not None else {},
     )
 
 if __name__ == "__main__":
@@ -225,8 +228,8 @@ Yes, I'm hogehoge.
             print()
 
 
-    docs = md_formatter(md_text, title="Sample Markdown")
+    docs = md_formatter(md_text, title="hogehogehoge", metadata={"fuga": "piyopiyo"})
     print_docs(docs)
 
-    # docs = text_formatter(md_text)
-    # print_docs(docs)
+    docs = text_formatter(md_text, title="hogehogehoge", metadata={"fuga": "piyopiyo"})
+    print_docs(docs)
