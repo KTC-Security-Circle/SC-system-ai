@@ -84,12 +84,15 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
     def create_document(
         self,
         text: str,
-        text_type: Literal["markdown", "plain"] = "markdown"
+        text_type: Literal["markdown", "plain"] = "markdown",
+        title: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> list[str]:
         """データベースに新しいdocumentを作成する関数"""
         logger.info("新しいdocumentを作成します")
         texts, metadatas = self._division_document(
-            md_formatter(text) if text_type == "markdown" else text_formatter(text)
+            md_formatter(text, title, metadata) if text_type == "markdown"
+            else text_formatter(text, title=title, metadata=metadata)
         )
         ids = self._insert_texts(texts, metadatas)
         return ids
