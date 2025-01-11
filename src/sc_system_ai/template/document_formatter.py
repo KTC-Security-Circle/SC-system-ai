@@ -97,6 +97,7 @@ def add_metadata(
         source (str, optional): ソース.
         with_timestamp (bool, optional): タイムスタンプの有無. Defaults to True.
         with_section_number (bool, optional): セクション番号の有無. Defaults to False.
+        **kwargs: その他のメタデータ.
     """
     i = 1
     date = datetime.now().strftime("%Y-%m-%d")
@@ -125,20 +126,23 @@ def add_metadata(
 def md_formatter(
     text: str,
     title: str | None = None,
+    metadata: dict[str, Any] | None = None,
     chunk_size: int = CHUNK_SIZE,
     chunk_overlap: int = CHUNK_OVERLAP,
-    **kwargs: Any
 ) -> list[Document]:
     """Markdown形式のテキストをフォーマットする関数
     Args:
         text (str): Markdown形式のテキスト
         title (str, optional): タイトル.
+        metadata (dict[str, Any], optional): メタデータ.
         chunk_size (int, optional): 分割するサイズ.
         chunk_overlap (int, optional): オーバーラップのサイズ.
 
     chunk_sizeを超えるテキストは再分割し、メタデータにセクション番号を付与します.
     """
     formatted_docs: list[Document] = []
+    _metadata = metadata if metadata is not None else {}
+
     for doc in markdown_splitter(text):
         t = _find_header(doc) if title is None else title
         if len(doc.page_content) > chunk_size:
@@ -151,13 +155,13 @@ def md_formatter(
                 rdocs,
                 title=t if t is not None else rdocs[0].page_content,
                 with_section_number=True,
-                **kwargs
+                **_metadata
             )
         else:
             formatted_docs += add_metadata(
                 [doc],
                 title=t if t is not None else doc.page_content,
-                **kwargs
+                **_metadata
             )
 
     return formatted_docs
