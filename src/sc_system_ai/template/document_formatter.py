@@ -124,6 +124,7 @@ def add_metadata(
 
 def md_formatter(
     text: str,
+    title: str | None = None,
     chunk_size: int = CHUNK_SIZE,
     chunk_overlap: int = CHUNK_OVERLAP,
     **kwargs: Any
@@ -131,6 +132,7 @@ def md_formatter(
     """Markdown形式のテキストをフォーマットする関数
     Args:
         text (str): Markdown形式のテキスト
+        title (str, optional): タイトル.
         chunk_size (int, optional): 分割するサイズ.
         chunk_overlap (int, optional): オーバーラップのサイズ.
 
@@ -138,7 +140,7 @@ def md_formatter(
     """
     formatted_docs: list[Document] = []
     for doc in markdown_splitter(text):
-        t = _find_header(doc)
+        t = _find_header(doc) if title is None else title
         if len(doc.page_content) > chunk_size:
             rdocs = recursive_document_splitter(
                 [doc],
@@ -219,8 +221,8 @@ Yes, I'm hogehoge.
             print()
 
 
-    docs = md_formatter(md_text)
+    docs = md_formatter(md_text, title="Sample Markdown")
     print_docs(docs)
 
-    docs = text_formatter(md_text)
-    print_docs(docs)
+    # docs = text_formatter(md_text)
+    # print_docs(docs)
