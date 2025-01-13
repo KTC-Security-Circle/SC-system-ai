@@ -81,6 +81,33 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             create_container=create_container,
         )
 
+    def read_item_by_id(
+        self,
+        id: str,
+        values: list[str] | None = None,
+    ) -> dict[str, Any] | None:
+        """idを指定してdocumentを読み込む関数"""
+        logger.info(f"{id=}のdocumentを読み込みます")
+
+        query = "SELECT "
+        if values is not None:
+            query += ", ".join(["c." + value for value in values]) + " "
+        else:
+            query += "* "
+        parameters = [{"name": "@id", "value": id}]
+
+        item = self._container.query_items(
+            query=query,
+            parameters=cast(list[dict[str, Any]], parameters), # mypyがエラー吐くのでキャスト
+            enable_cross_partition_query=True
+        )
+
+        if not item:
+            logger.error(f"{id=}のdocumentが見つかりませんでした")
+            return None
+        else:
+            return item.next()
+
     def create_document(
         self,
         text: str,
@@ -119,7 +146,6 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         # metadataのupdated_atを更新
         query = "SELECT c.metadata FROM c WHERE c.id = @id"
         parameters = [{"name": "@id", "value": id}]
-
         try:
             item = self._container.query_items(
                 query=query,
@@ -161,9 +187,12 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
     def get_source_by_id(self, id: str) -> str:
         """idを指定してsourceを取得する関数"""
         logger.info(f"{id=}のsourceを取得します")
-        query = "SELECT c.text FROM c WHERE c.id = " + f"'{id}'"
+        query = "SELECT c.text FROM c WHERE c.id = @id"
+        parameters = [{"name": "@id", "value": id}]
         item = self._container.query_items(
-            query=query, enable_cross_partition_query=True
+            query=query,
+            parameters=cast(list[dict[str, Any]], parameters), # mypyがエラー吐くのでキャスト
+            enable_cross_partition_query=True
         ).next()
 
         result = item["text"]
@@ -180,9 +209,9 @@ if __name__ == "__main__":
     cosmos_manager = CosmosDBManager()
     query = "京都テック"
     # results = cosmos_manager.read_all_documents()
-    results = cosmos_manager.similarity_search(query, k=1)
-    print(results[0])
-    print(results[0].metadata["id"])
+    # results = cosmos_manager.similarity_search(query, k=1)
+    # print(results[0])
+    # print(results[0].metadata["id"])
 
     # # idで指定したドキュメントのsourceを取得
     # ids = results[0].metadata["id"]
@@ -190,8 +219,8 @@ if __name__ == "__main__":
     # doc = cosmos_manager.get_source_by_id(ids)
     # print(doc)
 
-#     # documentを更新
-#     text = """ストリーミングレスポンスに対応するためにジェネレータとして定義されています。
-# エージェントが回答の生成を終えてからレスポンスを受け取ることも可能です。"""
-#     _id = "c55bb571-498a-4db9-9da0-e9e35d46906b"
-#     print(cosmos_manager.update_document(_id, text))
+    # documentを更新
+    text = """ストリーミングレスポンスに対応するためにジェネレータとして定義されています。
+エージェントが回答の生成を終えてからレスポンスを受け取ることも可能です。"""
+    _id = "989af836-cf9b-44c7-93d2-deff7aeae51f"
+    print(cosmos_manager.update_document(_id, text))
