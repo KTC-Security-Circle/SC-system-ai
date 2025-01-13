@@ -85,7 +85,7 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         self,
         values: list[str] | None = None,
         condition: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+    ) -> list[dict[str, Any]]:
         """idを指定してdocumentを読み込む関数"""
         logger.info(f"{id=}のdocumentを読み込みます")
 
@@ -106,15 +106,15 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
                 query += " AND"
             query = query[:-4]
 
-        try:
-            item = self._container.query_items(
-                query=query,
-                parameters=parameters if parameters else None,
-                enable_cross_partition_query=True
-            ).next()
-        except StopIteration:
+        item = list(self._container.query_items(
+            query=query,
+            parameters=parameters if parameters else None,
+            enable_cross_partition_query=True
+        ))
+
+        if not item:
             logger.error(f"{id=}のdocumentが見つかりませんでした")
-            raise ValueError("documentが見つかりませんでした") from None
+            raise ValueError("documentが見つかりませんでした")
         return item
 
     def create_document(
@@ -235,10 +235,7 @@ if __name__ == "__main__":
 #     print(cosmos_manager.update_document(_id, text))
 
     item = cosmos_manager.read_item(
-        values=["text", "metadata"],
-        condition={
-            "id": "989af836-cf9b-44c7-93d2-deff7aeae51f",
-            "metadata.updated_at": "2025-01-13",
-        }
+        values=["metadata"],
+        condition={"id": "989af836-cf9b-44c7-93d2-deff7aeae51f"}
     )
     print(item)
