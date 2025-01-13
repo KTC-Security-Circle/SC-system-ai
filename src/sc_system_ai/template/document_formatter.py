@@ -1,6 +1,7 @@
 import re
 from datetime import datetime
 from typing import Any
+from uuid import uuid4
 
 from langchain_core.documents import Document
 from langchain_text_splitters import (
@@ -99,29 +100,39 @@ def add_metadata(
         with_section_number (bool, optional): セクション番号の有無. Defaults to False.
         **kwargs: その他のメタデータ.
     """
-    i = 1
-    date = datetime.now().strftime("%Y-%m-%d")
-    for doc in documents:
-        doc.metadata["title"] = title
+    m: dict[str, Any] = {
+        "title": title, **kwargs
+    }
 
-        if source is not None and \
-            doc.metadata.get("source") is None:
-            doc.metadata["source"] = source
+    if source is not None:
+        m["source"] = source
+    if with_timestamp:
+        date = datetime.now().strftime("%Y-%m-%d")
+        m["created_at"] = date
+        m["updated_at"] = date
+    doc_id = str(uuid4())
 
-        if with_timestamp and \
-            doc.metadata.get("created_at") is None:
-            doc.metadata["created_at"] = date
-            doc.metadata["updated_at"] = date
+    return [
+        _add_metadata(
+            doc,
+            {**m, "section_number": i, "group_id": doc_id}
+            if with_section_number else m
+        )
+        for i, doc in enumerate(documents, start=1)
+    ]
 
-        if with_section_number and \
-            doc.metadata.get("section_number") is None:
-            doc.metadata["section_number"] = i
-            i += 1
-
-        for key, value in kwargs.items():
-            doc.metadata[key] = value
-
-    return documents
+def _add_metadata(
+    document: Document,
+    metadata: dict[str, Any]
+) -> Document:
+    """メタデータを追加する関数
+    Args:
+        document (Document): ドキュメント
+        metadata (dict[str, Any]): メタデータ.
+    """
+    for key, value in metadata.items():
+        document.metadata[key] = value
+    return document
 
 def md_formatter(
     text: str,
@@ -151,6 +162,7 @@ def md_formatter(
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
             )
+
             formatted_docs += add_metadata(
                 rdocs,
                 title=t if t is not None else rdocs[0].page_content,
