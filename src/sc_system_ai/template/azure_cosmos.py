@@ -85,7 +85,7 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         self,
         id: str,
         values: list[str] | None = None,
-    ) -> dict[str, Any] | None:
+    ) -> dict[str, Any]:
         """idを指定してdocumentを読み込む関数"""
         logger.info(f"{id=}のdocumentを読み込みます")
 
@@ -104,9 +104,8 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
 
         if not item:
             logger.error(f"{id=}のdocumentが見つかりませんでした")
-            return None
-        else:
-            return item.next()
+            raise ValueError("documentが見つかりませんでした")
+        return item.next()
 
     def create_document(
         self,
