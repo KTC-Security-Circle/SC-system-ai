@@ -100,7 +100,7 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         if condition is not None:
             query += " WHERE"
             for key, value in condition.items():
-                name = key if "." not in key else key.split(".")[-1]
+                name = key if "." not in key else key.replace(".", "_")
                 query += f" c.{key} = @{name}"
                 parameters.append({"name": f"@{name}", "value": value})
                 query += " AND"
