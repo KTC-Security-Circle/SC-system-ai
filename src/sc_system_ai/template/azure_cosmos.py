@@ -81,10 +81,10 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             create_container=create_container,
         )
 
-    def read_item_by_id(
+    def read_item(
         self,
-        id: str,
         values: list[str] | None = None,
+        condition: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """idを指定してdocumentを読み込む関数"""
         logger.info(f"{id=}のdocumentを読み込みます")
@@ -94,18 +94,28 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             query += ", ".join(["c." + value for value in values]) + " "
         else:
             query += "* "
-        parameters = [{"name": "@id", "value": id}]
+        query += "FROM c"
 
-        item = self._container.query_items(
-            query=query,
-            parameters=cast(list[dict[str, Any]], parameters), # mypyがエラー吐くのでキャスト
-            enable_cross_partition_query=True
-        )
+        parameters = []
+        if condition is not None:
+            query += " WHERE"
+            for key, value in condition.items():
+                name = key if "." not in key else key.split(".")[-1]
+                query += f" c.{key} = @{name}"
+                parameters.append({"name": f"@{name}", "value": value})
+                query += " AND"
+            query = query[:-4]
 
-        if not item:
+        try:
+            item = self._container.query_items(
+                query=query,
+                parameters=parameters if parameters else None,
+                enable_cross_partition_query=True
+            ).next()
+        except StopIteration:
             logger.error(f"{id=}のdocumentが見つかりませんでした")
-            raise ValueError("documentが見つかりませんでした")
-        return item.next()
+            raise ValueError("documentが見つかりませんでした") from None
+        return item
 
     def create_document(
         self,
@@ -219,7 +229,16 @@ if __name__ == "__main__":
     # print(doc)
 
     # documentを更新
-    text = """ストリーミングレスポンスに対応するためにジェネレータとして定義されています。
-エージェントが回答の生成を終えてからレスポンスを受け取ることも可能です。"""
-    _id = "989af836-cf9b-44c7-93d2-deff7aeae51f"
-    print(cosmos_manager.update_document(_id, text))
+#     text = """ストリーミングレスポンスに対応するためにジェネレータとして定義されています。
+# エージェントが回答の生成を終えてからレスポンスを受け取ることも可能です。"""
+#     _id = "989af836-cf9b-44c7-93d2-deff7aeae51f"
+#     print(cosmos_manager.update_document(_id, text))
+
+    item = cosmos_manager.read_item(
+        values=["text", "metadata"],
+        condition={
+            "id": "989af836-cf9b-44c7-93d2-deff7aeae51f",
+            "metadata.updated_at": "2025-01-13",
+        }
+    )
+    print(item)
