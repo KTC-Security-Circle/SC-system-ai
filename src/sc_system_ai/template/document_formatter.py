@@ -138,8 +138,6 @@ def md_formatter(
     text: str,
     title: str | None = None,
     metadata: dict[str, Any] | None = None,
-    chunk_size: int = CHUNK_SIZE,
-    chunk_overlap: int = CHUNK_OVERLAP,
 ) -> list[Document]:
     """Markdown形式のテキストをフォーマットする関数
     Args:
@@ -151,31 +149,15 @@ def md_formatter(
 
     chunk_sizeを超えるテキストは再分割し、メタデータにセクション番号を付与します.
     """
-    formatted_docs: list[Document] = []
+    docs = markdown_splitter(text)
     _metadata = metadata if metadata is not None else {}
-
-    for doc in markdown_splitter(text):
-        t = _find_header(doc) if title is None else title
-        if len(doc.page_content) > chunk_size:
-            rdocs = recursive_document_splitter(
-                [doc],
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-            )
-
-            formatted_docs += add_metadata(
-                rdocs,
-                title=t if t is not None else rdocs[0].page_content,
-                with_section_number=True,
-                **_metadata
-            )
-        else:
-            formatted_docs += add_metadata(
-                [doc],
-                title=t if t is not None else doc.page_content,
-                **_metadata
-            )
-
+    t = _find_header(docs[0]) if title is None else title
+    formatted_docs = add_metadata(
+        docs,
+        title=t if t is not None else docs[0].page_content,
+        with_section_number=True if len(docs) > 1 else False,
+        **_metadata,
+    )
     return formatted_docs
 
 def text_formatter(
