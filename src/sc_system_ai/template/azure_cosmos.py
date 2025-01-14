@@ -86,8 +86,8 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         values: list[str] | None = None,
         condition: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
-        """idを指定してdocumentを読み込む関数"""
-        logger.info(f"{id=}のdocumentを読み込みます")
+        """条件を指定してdocumentを読み込む関数"""
+        logger.info("documentを読み込みます")
 
         query = "SELECT "
         if values is not None:
@@ -153,15 +153,9 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         logger.info("documentを更新します")
 
         # metadataのupdated_atを更新
-        query = "SELECT c.metadata FROM c WHERE c.id = @id"
-        parameters = [{"name": "@id", "value": id}]
         try:
-            item = self._container.query_items(
-                query=query,
-                parameters=cast(list[dict[str, Any]], parameters), # mypyがエラー吐くのでキャスト
-                enable_cross_partition_query=True
-            ).next()
-        except StopIteration:
+            item = self.read_item(values=["metadata"], condition={"id": id})[0]
+        except ValueError:
             logger.error(f"{id=}のdocumentが見つかりませんでした")
             return "documentが見つかりませんでした"
 
@@ -196,19 +190,12 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
     def get_source_by_id(self, id: str) -> str:
         """idを指定してsourceを取得する関数"""
         logger.info(f"{id=}のsourceを取得します")
-        query = "SELECT c.text FROM c WHERE c.id = @id"
-        parameters = [{"name": "@id", "value": id}]
-        item = self._container.query_items(
-            query=query,
-            parameters=cast(list[dict[str, Any]], parameters), # mypyがエラー吐くのでキャスト
-            enable_cross_partition_query=True
-        ).next()
-
-        result = item["text"]
-        if type(result) is str:
-            return result
-        else:
-            return "sourceが見つかりませんでした"
+        try:
+            item = self.read_item(values=["text"], condition={"id": id})
+        except ValueError:
+            return "documentが見つかりませんでした"
+        result = item[0]["text"]
+        return cast(str, result)
 
 
 if __name__ == "__main__":
