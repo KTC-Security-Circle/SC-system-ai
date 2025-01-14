@@ -147,29 +147,37 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
     def update_document(
         self,
         id: str,
-        text: str,
+        text: str | None = None,
+        text_type: Literal["markdown", "plain"] | None = None,
+        title: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> str:
         """データベースのdocumentを更新する関数"""
         logger.info("documentを更新します")
+        item = self.read_item(values=["text", "metadata"], condition={"id": id})[0]
 
-        # metadataのupdated_atを更新
-        try:
-            item = self.read_item(values=["metadata"], condition={"id": id})[0]
-        except ValueError:
-            logger.error(f"{id=}のdocumentが見つかりませんでした")
-            return "documentが見つかりませんでした"
+        if title is not None:
+            self._title_updater(id, title, item["metadata"].get("group_id", None))
 
-        metadata = item["metadata"]
-        metadata["updated_at"] = datetime.now().strftime("%Y-%m-%d")
+        return ""
 
-        to_upsert = {
-            "id": id,
-            "text": text,
-            self._embedding_key: self._embedding.embed_documents([text])[0],
-            "metadata": metadata,
-        }
-        self._container.upsert_item(body=to_upsert)
-        return id
+    def _title_updater(self, id: str, title: str, group_id: str | None) -> None:
+        """titleを更新する関数"""
+        if group_id is None:
+            ids = [id]
+        else:
+            data = self.read_item(values=["id"], condition={"metadata.group_id": group_id})
+            ids = [cast(str, d["id"]) for d in data]
+
+        patch = [{
+            "op": "replace",
+            "path": "/metadata/title",
+            "value": title
+        }]
+        for _id in ids:
+            self._container.patch_item(
+                item=_id, partition_key=_id, patch_operations=patch
+            )
 
     def read_all_documents(self) -> list[Document]:
         """全てのdocumentsとIDを読み込む関数"""
@@ -221,8 +229,7 @@ if __name__ == "__main__":
 #     _id = "989af836-cf9b-44c7-93d2-deff7aeae51f"
 #     print(cosmos_manager.update_document(_id, text))
 
-    item = cosmos_manager.read_item(
-        values=["metadata"],
-        condition={"id": "989af836-cf9b-44c7-93d2-deff7aeae51f"}
+    cosmos_manager.update_document(
+        id="a1a83722-0086-4819-be99-32d28bfb7e5a",
+        title="hogehogehogehoge"
     )
-    print(item)
