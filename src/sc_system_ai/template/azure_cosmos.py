@@ -81,15 +81,54 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             create_container=create_container,
         )
 
+    def read_item(
+        self,
+        values: list[str] | None = None,
+        condition: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
+        """条件を指定してdocumentを読み込む関数"""
+        logger.info("documentを読み込みます")
+
+        query = "SELECT "
+        if values is not None:
+            query += ", ".join(["c." + value for value in values]) + " "
+        else:
+            query += "* "
+        query += "FROM c"
+
+        parameters = []
+        if condition is not None:
+            query += " WHERE"
+            for key, value in condition.items():
+                name = key if "." not in key else key.replace(".", "_")
+                query += f" c.{key} = @{name}"
+                parameters.append({"name": f"@{name}", "value": value})
+                query += " AND"
+            query = query[:-4]
+
+        item = list(self._container.query_items(
+            query=query,
+            parameters=parameters if parameters else None,
+            enable_cross_partition_query=True
+        ))
+
+        if not item:
+            logger.error(f"{id=}のdocumentが見つかりませんでした")
+            raise ValueError("documentが見つかりませんでした")
+        return item
+
     def create_document(
         self,
         text: str,
-        text_type: Literal["markdown", "plain"] = "markdown"
+        text_type: Literal["markdown", "plain"] = "markdown",
+        title: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> list[str]:
         """データベースに新しいdocumentを作成する関数"""
         logger.info("新しいdocumentを作成します")
         texts, metadatas = self._division_document(
-            md_formatter(text) if text_type == "markdown" else text_formatter(text)
+            md_formatter(text, title, metadata) if text_type == "markdown"
+            else text_formatter(text, title=title, metadata=metadata)
         )
         ids = self._insert_texts(texts, metadatas)
         return ids
@@ -108,36 +147,37 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
     def update_document(
         self,
         id: str,
-        text: str,
+        text: str | None = None,
+        text_type: Literal["markdown", "plain"] | None = None,
+        title: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> str:
         """データベースのdocumentを更新する関数"""
         logger.info("documentを更新します")
+        item = self.read_item(values=["text", "metadata"], condition={"id": id})[0]
 
-        # metadataのupdated_atを更新
-        query = "SELECT c.metadata FROM c WHERE c.id = @id"
-        parameters = [{"name": "@id", "value": id}]
+        if title is not None:
+            self._title_updater(id, title, item["metadata"].get("group_id", None))
 
-        try:
-            item = self._container.query_items(
-                query=query,
-                parameters=cast(list[dict[str, Any]], parameters), # mypyがエラー吐くのでキャスト
-                enable_cross_partition_query=True
-            ).next()
-        except StopIteration:
-            logger.error(f"{id=}のdocumentが見つかりませんでした")
-            return "documentが見つかりませんでした"
+        return ""
 
-        metadata = item["metadata"]
-        metadata["updated_at"] = datetime.now().strftime("%Y-%m-%d")
+    def _title_updater(self, id: str, title: str, group_id: str | None) -> None:
+        """titleを更新する関数"""
+        if group_id is None:
+            ids = [id]
+        else:
+            data = self.read_item(values=["id"], condition={"metadata.group_id": group_id})
+            ids = [cast(str, d["id"]) for d in data]
 
-        to_upsert = {
-            "id": id,
-            "text": text,
-            self._embedding_key: self._embedding.embed_documents([text])[0],
-            "metadata": metadata,
-        }
-        self._container.upsert_item(body=to_upsert)
-        return id
+        patch = [{
+            "op": "replace",
+            "path": "/metadata/title",
+            "value": title
+        }]
+        for _id in ids:
+            self._container.patch_item(
+                item=_id, partition_key=_id, patch_operations=patch
+            )
 
     def read_all_documents(self) -> list[Document]:
         """全てのdocumentsとIDを読み込む関数"""
@@ -158,16 +198,12 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
     def get_source_by_id(self, id: str) -> str:
         """idを指定してsourceを取得する関数"""
         logger.info(f"{id=}のsourceを取得します")
-        query = "SELECT c.text FROM c WHERE c.id = " + f"'{id}'"
-        item = self._container.query_items(
-            query=query, enable_cross_partition_query=True
-        ).next()
-
-        result = item["text"]
-        if type(result) is str:
-            return result
-        else:
-            return "sourceが見つかりませんでした"
+        try:
+            item = self.read_item(values=["text"], condition={"id": id})
+        except ValueError:
+            return "documentが見つかりませんでした"
+        result = item[0]["text"]
+        return cast(str, result)
 
 
 if __name__ == "__main__":
@@ -177,9 +213,9 @@ if __name__ == "__main__":
     cosmos_manager = CosmosDBManager()
     query = "京都テック"
     # results = cosmos_manager.read_all_documents()
-    results = cosmos_manager.similarity_search(query, k=1)
-    print(results[0])
-    print(results[0].metadata["id"])
+    # results = cosmos_manager.similarity_search(query, k=1)
+    # print(results[0])
+    # print(results[0].metadata["id"])
 
     # # idで指定したドキュメントのsourceを取得
     # ids = results[0].metadata["id"]
@@ -187,8 +223,13 @@ if __name__ == "__main__":
     # doc = cosmos_manager.get_source_by_id(ids)
     # print(doc)
 
-#     # documentを更新
+    # documentを更新
 #     text = """ストリーミングレスポンスに対応するためにジェネレータとして定義されています。
 # エージェントが回答の生成を終えてからレスポンスを受け取ることも可能です。"""
-#     _id = "c55bb571-498a-4db9-9da0-e9e35d46906b"
+#     _id = "989af836-cf9b-44c7-93d2-deff7aeae51f"
 #     print(cosmos_manager.update_document(_id, text))
+
+    cosmos_manager.update_document(
+        id="a1a83722-0086-4819-be99-32d28bfb7e5a",
+        title="hogehogehogehoge"
+    )
