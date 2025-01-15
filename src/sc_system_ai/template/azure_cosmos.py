@@ -174,6 +174,18 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
                 id, text, text_type, item["metadata"].get("group_id", None)
             )
 
+        if any([title, metadata, del_metadata]):
+            date = datetime.now().strftime("%Y-%m-%d")
+            patch = [{
+                "op": "replace",
+                "path": "/metadata/updated_at",
+                "value": date
+            }]
+            for _id in result:
+                self._container.patch_item(
+                    item=_id, partition_key=_id, patch_operations=patch
+                )
+
         return result
 
     def _title_updater(self, id: str, title: str, group_id: str | None = None) -> None:
@@ -277,6 +289,17 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             )
         return ids
 
+    def _update_updated_at(self, id: str) -> None:
+        """updated_atを更新する関数"""
+        patch = [{
+            "op": "replace",
+            "path": "/metadata/updated_at",
+            "value": datetime.now().strftime("%Y-%m-%d")
+        }]
+        self._container.patch_item(
+            item=id, partition_key=id, patch_operations=patch
+        )
+
     def read_all_documents(self) -> list[Document]:
         """全てのdocumentsとIDを読み込む関数"""
         logger.info("全てのdocumentsを読み込みます")
@@ -323,12 +346,13 @@ if __name__ == "__main__":
 
     # documentを更新
     text = """ストリーミングレスポンスに対応するためにジェネレータとして定義されています。
-# エージェントが回答の生成を終えてからレスポンスを受け取ることも可能です。"""
+エージェントが回答の生成を終えてからレスポンスを受け取ることも可能です。"""
 #     _id = "989af836-cf9b-44c7-93d2-deff7aeae51f"
 #     print(cosmos_manager.update_document(_id, text))
 
+
     cosmos_manager.update_document(
-        id="a1a83722-0086-4819-be99-32d28bfb7e5a",
+        id="98941def-479c-4292-ad68-1d6dd9f4800e",
         text=text,
         text_type="markdown",
     )
