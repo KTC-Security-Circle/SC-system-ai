@@ -289,17 +289,6 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             )
         return ids
 
-    def _update_updated_at(self, id: str) -> None:
-        """updated_atを更新する関数"""
-        patch = [{
-            "op": "replace",
-            "path": "/metadata/updated_at",
-            "value": datetime.now().strftime("%Y-%m-%d")
-        }]
-        self._container.patch_item(
-            item=id, partition_key=id, patch_operations=patch
-        )
-
     def read_all_documents(self) -> list[Document]:
         """全てのdocumentsとIDを読み込む関数"""
         logger.info("全てのdocumentsを読み込みます")
@@ -351,6 +340,11 @@ if __name__ == "__main__":
 #     print(cosmos_manager.update_document(_id, text))
 
 
+    cosmos_manager.update_document(
+        id="98941def-479c-4292-ad68-1d6dd9f4800e",
+        text=text,
+        text_type="markdown",
+    )
     cosmos_manager.update_document(
         id="98941def-479c-4292-ad68-1d6dd9f4800e",
         text=text,
