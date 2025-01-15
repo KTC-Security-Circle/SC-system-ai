@@ -153,9 +153,10 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         metadata: dict[str, Any] | None = None,
         del_metadata: list[str] | None = None,
         is_patch: bool = False,
-    ) -> str:
+    ) -> list[str]:
         """データベースのdocumentを更新する関数"""
         logger.info("documentを更新します")
+        result = [id]
         item = self.read_item(values=["text", "metadata"], condition={"id": id})[0]
 
         if title is not None:
@@ -163,10 +164,17 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
 
         if metadata is not None:
             self._metadata_updater(
-                id, metadata, None if is_patch else item["metadata"].get("group_id", None), del_metadata
+                id, metadata, del_metadata, None if is_patch else item["metadata"].get("group_id", None)
             )
 
-        return ""
+        if text is not None:
+            if text_type is None:
+                raise TypeError("textを更新する際はtext_typeを指定してください。")
+            result = self._update_text(
+                id, text, text_type, item["metadata"].get("group_id", None)
+            )
+
+        return result
 
     def _title_updater(self, id: str, title: str, group_id: str | None = None) -> None:
         """titleを更新する関数"""
@@ -190,20 +198,20 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         self,
         id: str,
         metadata: dict[str, Any],
-        group_id: str | None = None,
         del_metadata: list[str] | None = None,
+        group_id: str | None = None,
     ) -> None:
         """metadataを更新する関数"""
         if group_id is None:
             data = self.read_item(values=["metadata"], condition={"id": id})[0]
-            prev_metadata = [cast(dict[str, Any], data["metadata"])]
+            prev_metadatas = [cast(dict[str, Any], data["metadata"])]
             ids = [id]
         else:
             datas = self.read_item(values=["id", "metadata"], condition={"metadata.group_id": group_id})
-            prev_metadata = [cast(dict[str, Any], d["metadata"]) for d in datas]
+            prev_metadatas = [cast(dict[str, Any], d["metadata"]) for d in datas]
             ids = [cast(str, d["id"]) for d in datas]
 
-        for _id, pm in zip(ids, prev_metadata, strict=True):
+        for _id, pm in zip(ids, prev_metadatas, strict=True):
             patch = self._create_patch(pm, metadata, [] if del_metadata is None else del_metadata)
             self._container.patch_item(
                 item=_id, partition_key=_id, patch_operations=patch
@@ -241,6 +249,33 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
                 })
         return patch
 
+    def _update_text(
+        self,
+        id: str,
+        text: str,
+        text_type: Literal["markdown", "plain"],
+        group_id: str | None = None,
+    ) -> list[str]:
+        """textを更新する関数"""
+        created_at = self.read_item(values=["metadata.created_at"], condition={"id": id})[0]["created_at"]
+        if group_id is None:
+            self.delete_document_by_id(id)
+        else:
+            data = self.read_item(values=["id"], condition={"metadata.group_id": group_id})
+            for d in data:
+                self.delete_document_by_id(d["id"])
+
+        ids = self.create_document(text, text_type)
+        patch = [{
+            "op": "replace",
+            "path": "/metadata/created_at",
+            "value": created_at
+        }]
+        for _id in ids:
+            self._container.patch_item(
+                item=_id, partition_key=_id, patch_operations=patch
+            )
+        return ids
 
     def read_all_documents(self) -> list[Document]:
         """全てのdocumentsとIDを読み込む関数"""
@@ -287,14 +322,13 @@ if __name__ == "__main__":
     # print(doc)
 
     # documentを更新
-#     text = """ストリーミングレスポンスに対応するためにジェネレータとして定義されています。
+    text = """ストリーミングレスポンスに対応するためにジェネレータとして定義されています。
 # エージェントが回答の生成を終えてからレスポンスを受け取ることも可能です。"""
 #     _id = "989af836-cf9b-44c7-93d2-deff7aeae51f"
 #     print(cosmos_manager.update_document(_id, text))
 
     cosmos_manager.update_document(
         id="a1a83722-0086-4819-be99-32d28bfb7e5a",
-        metadata={"title": "piyopiyo"},
-        del_metadata=["source"],
-        is_patch=False,
+        text=text,
+        text_type="markdown",
     )
