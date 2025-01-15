@@ -151,6 +151,8 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         text_type: Literal["markdown", "plain"] | None = None,
         title: str | None = None,
         metadata: dict[str, Any] | None = None,
+        del_metadata: list[str] | None = None,
+        is_patch: bool = False,
     ) -> str:
         """データベースのdocumentを更新する関数"""
         logger.info("documentを更新します")
@@ -159,9 +161,14 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         if title is not None:
             self._title_updater(id, title, item["metadata"].get("group_id", None))
 
+        if metadata is not None:
+            self._metadata_updater(
+                id, metadata, None if is_patch else item["metadata"].get("group_id", None), del_metadata
+            )
+
         return ""
 
-    def _title_updater(self, id: str, title: str, group_id: str | None) -> None:
+    def _title_updater(self, id: str, title: str, group_id: str | None = None) -> None:
         """titleを更新する関数"""
         if group_id is None:
             ids = [id]
@@ -178,6 +185,62 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             self._container.patch_item(
                 item=_id, partition_key=_id, patch_operations=patch
             )
+
+    def _metadata_updater(
+        self,
+        id: str,
+        metadata: dict[str, Any],
+        group_id: str | None = None,
+        del_metadata: list[str] | None = None,
+    ) -> None:
+        """metadataを更新する関数"""
+        if group_id is None:
+            data = self.read_item(values=["metadata"], condition={"id": id})[0]
+            prev_metadata = [cast(dict[str, Any], data["metadata"])]
+            ids = [id]
+        else:
+            datas = self.read_item(values=["id", "metadata"], condition={"metadata.group_id": group_id})
+            prev_metadata = [cast(dict[str, Any], d["metadata"]) for d in datas]
+            ids = [cast(str, d["id"]) for d in datas]
+
+        for _id, pm in zip(ids, prev_metadata, strict=True):
+            patch = self._create_patch(pm, metadata, [] if del_metadata is None else del_metadata)
+            self._container.patch_item(
+                item=_id, partition_key=_id, patch_operations=patch
+            )
+
+    def _create_patch(
+        self,
+        prev_metadata: dict[str, Any],
+        new_metadata: dict[str, Any],
+        del_metadata: list[str],
+    ) -> list[dict[str, Any]]:
+        """metadataの差分を取得しパッチ操作を定義する関数"""
+        patch = []
+        for dm in del_metadata:
+            if dm in new_metadata:
+                raise ValueError(f"metadata:{dm}は新しいmetadataに含まれています")
+            if dm in prev_metadata:
+                patch.append({
+                    "op": "remove",
+                    "path": f"/metadata/{dm}"
+                })
+
+        for key, value in new_metadata.items():
+            if key not in prev_metadata:
+                patch.append({
+                    "op": "add",
+                    "path": f"/metadata/{key}",
+                    "value": value
+                })
+            elif prev_metadata[key] != value:
+                patch.append({
+                    "op": "replace",
+                    "path": f"/metadata/{key}",
+                    "value": value
+                })
+        return patch
+
 
     def read_all_documents(self) -> list[Document]:
         """全てのdocumentsとIDを読み込む関数"""
@@ -231,5 +294,7 @@ if __name__ == "__main__":
 
     cosmos_manager.update_document(
         id="a1a83722-0086-4819-be99-32d28bfb7e5a",
-        title="hogehogehogehoge"
+        metadata={"title": "piyopiyo"},
+        del_metadata=["source"],
+        is_patch=False,
     )
