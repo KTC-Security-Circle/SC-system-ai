@@ -81,15 +81,54 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             create_container=create_container,
         )
 
+    def read_item(
+        self,
+        values: list[str] | None = None,
+        condition: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
+        """条件を指定してdocumentを読み込む関数"""
+        logger.info("documentを読み込みます")
+
+        query = "SELECT "
+        if values is not None:
+            query += ", ".join(["c." + value for value in values]) + " "
+        else:
+            query += "* "
+        query += "FROM c"
+
+        parameters = []
+        if condition is not None:
+            query += " WHERE"
+            for key, value in condition.items():
+                name = key if "." not in key else key.replace(".", "_")
+                query += f" c.{key} = @{name}"
+                parameters.append({"name": f"@{name}", "value": value})
+                query += " AND"
+            query = query[:-4]
+
+        item = list(self._container.query_items(
+            query=query,
+            parameters=parameters if parameters else None,
+            enable_cross_partition_query=True
+        ))
+
+        if not item:
+            logger.error(f"{id=}のdocumentが見つかりませんでした")
+            raise ValueError("documentが見つかりませんでした")
+        return item
+
     def create_document(
         self,
         text: str,
-        text_type: Literal["markdown", "plain"] = "markdown"
+        text_type: Literal["markdown", "plain"] = "markdown",
+        title: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> list[str]:
         """データベースに新しいdocumentを作成する関数"""
         logger.info("新しいdocumentを作成します")
         texts, metadatas = self._division_document(
-            md_formatter(text) if text_type == "markdown" else text_formatter(text)
+            md_formatter(text, title, metadata) if text_type == "markdown"
+            else text_formatter(text, title=title, metadata=metadata)
         )
         ids = self._insert_texts(texts, metadatas)
         return ids
@@ -108,36 +147,147 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
     def update_document(
         self,
         id: str,
-        text: str,
-    ) -> str:
+        text: str | None = None,
+        text_type: Literal["markdown", "plain"] | None = None,
+        title: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        del_metadata: list[str] | None = None,
+        is_patch: bool = False,
+    ) -> list[str]:
         """データベースのdocumentを更新する関数"""
         logger.info("documentを更新します")
+        result = [id]
+        item = self.read_item(values=["text", "metadata"], condition={"id": id})[0]
 
-        # metadataのupdated_atを更新
-        query = "SELECT c.metadata FROM c WHERE c.id = @id"
-        parameters = [{"name": "@id", "value": id}]
+        if title is not None:
+            self._title_updater(id, title, item["metadata"].get("group_id", None))
 
-        try:
-            item = self._container.query_items(
-                query=query,
-                parameters=cast(list[dict[str, Any]], parameters), # mypyがエラー吐くのでキャスト
-                enable_cross_partition_query=True
-            ).next()
-        except StopIteration:
-            logger.error(f"{id=}のdocumentが見つかりませんでした")
-            return "documentが見つかりませんでした"
+        if metadata is not None:
+            self._metadata_updater(
+                id, metadata, del_metadata, None if is_patch else item["metadata"].get("group_id", None)
+            )
 
-        metadata = item["metadata"]
-        metadata["updated_at"] = datetime.now().strftime("%Y-%m-%d")
+        if text is not None:
+            if text_type is None:
+                raise TypeError("textを更新する際はtext_typeを指定してください。")
+            result = self._update_text(
+                id, text, text_type, item["metadata"].get("group_id", None)
+            )
 
-        to_upsert = {
-            "id": id,
-            "text": text,
-            self._embedding_key: self._embedding.embed_documents([text])[0],
-            "metadata": metadata,
-        }
-        self._container.upsert_item(body=to_upsert)
-        return id
+        if any([title, metadata, del_metadata]):
+            date = datetime.now().strftime("%Y-%m-%d")
+            patch = [{
+                "op": "replace",
+                "path": "/metadata/updated_at",
+                "value": date
+            }]
+            for _id in result:
+                self._container.patch_item(
+                    item=_id, partition_key=_id, patch_operations=patch
+                )
+
+        return result
+
+    def _title_updater(self, id: str, title: str, group_id: str | None = None) -> None:
+        """titleを更新する関数"""
+        if group_id is None:
+            ids = [id]
+        else:
+            data = self.read_item(values=["id"], condition={"metadata.group_id": group_id})
+            ids = [cast(str, d["id"]) for d in data]
+
+        patch = [{
+            "op": "replace",
+            "path": "/metadata/title",
+            "value": title
+        }]
+        for _id in ids:
+            self._container.patch_item(
+                item=_id, partition_key=_id, patch_operations=patch
+            )
+
+    def _metadata_updater(
+        self,
+        id: str,
+        metadata: dict[str, Any],
+        del_metadata: list[str] | None = None,
+        group_id: str | None = None,
+    ) -> None:
+        """metadataを更新する関数"""
+        if group_id is None:
+            data = self.read_item(values=["metadata"], condition={"id": id})[0]
+            prev_metadatas = [cast(dict[str, Any], data["metadata"])]
+            ids = [id]
+        else:
+            datas = self.read_item(values=["id", "metadata"], condition={"metadata.group_id": group_id})
+            prev_metadatas = [cast(dict[str, Any], d["metadata"]) for d in datas]
+            ids = [cast(str, d["id"]) for d in datas]
+
+        for _id, pm in zip(ids, prev_metadatas, strict=True):
+            patch = self._create_patch(pm, metadata, [] if del_metadata is None else del_metadata)
+            self._container.patch_item(
+                item=_id, partition_key=_id, patch_operations=patch
+            )
+
+    def _create_patch(
+        self,
+        prev_metadata: dict[str, Any],
+        new_metadata: dict[str, Any],
+        del_metadata: list[str],
+    ) -> list[dict[str, Any]]:
+        """metadataの差分を取得しパッチ操作を定義する関数"""
+        patch = []
+        for dm in del_metadata:
+            if dm in new_metadata:
+                raise ValueError(f"metadata:{dm}は新しいmetadataに含まれています")
+            if dm in prev_metadata:
+                patch.append({
+                    "op": "remove",
+                    "path": f"/metadata/{dm}"
+                })
+
+        for key, value in new_metadata.items():
+            if key not in prev_metadata:
+                patch.append({
+                    "op": "add",
+                    "path": f"/metadata/{key}",
+                    "value": value
+                })
+            elif prev_metadata[key] != value:
+                patch.append({
+                    "op": "replace",
+                    "path": f"/metadata/{key}",
+                    "value": value
+                })
+        return patch
+
+    def _update_text(
+        self,
+        id: str,
+        text: str,
+        text_type: Literal["markdown", "plain"],
+        group_id: str | None = None,
+    ) -> list[str]:
+        """textを更新する関数"""
+        created_at = self.read_item(values=["metadata.created_at"], condition={"id": id})[0]["created_at"]
+        if group_id is None:
+            self.delete_document_by_id(id)
+        else:
+            data = self.read_item(values=["id"], condition={"metadata.group_id": group_id})
+            for d in data:
+                self.delete_document_by_id(d["id"])
+
+        ids = self.create_document(text, text_type)
+        patch = [{
+            "op": "replace",
+            "path": "/metadata/created_at",
+            "value": created_at
+        }]
+        for _id in ids:
+            self._container.patch_item(
+                item=_id, partition_key=_id, patch_operations=patch
+            )
+        return ids
 
     def read_all_documents(self) -> list[Document]:
         """全てのdocumentsとIDを読み込む関数"""
@@ -158,16 +308,12 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
     def get_source_by_id(self, id: str) -> str:
         """idを指定してsourceを取得する関数"""
         logger.info(f"{id=}のsourceを取得します")
-        query = "SELECT c.text FROM c WHERE c.id = " + f"'{id}'"
-        item = self._container.query_items(
-            query=query, enable_cross_partition_query=True
-        ).next()
-
-        result = item["text"]
-        if type(result) is str:
-            return result
-        else:
-            return "sourceが見つかりませんでした"
+        try:
+            item = self.read_item(values=["text"], condition={"id": id})
+        except ValueError:
+            return "documentが見つかりませんでした"
+        result = item[0]["text"]
+        return cast(str, result)
 
 
 if __name__ == "__main__":
@@ -177,9 +323,9 @@ if __name__ == "__main__":
     cosmos_manager = CosmosDBManager()
     query = "京都テック"
     # results = cosmos_manager.read_all_documents()
-    results = cosmos_manager.similarity_search(query, k=1)
-    print(results[0])
-    print(results[0].metadata["id"])
+    # results = cosmos_manager.similarity_search(query, k=1)
+    # print(results[0])
+    # print(results[0].metadata["id"])
 
     # # idで指定したドキュメントのsourceを取得
     # ids = results[0].metadata["id"]
@@ -187,8 +333,20 @@ if __name__ == "__main__":
     # doc = cosmos_manager.get_source_by_id(ids)
     # print(doc)
 
-#     # documentを更新
-#     text = """ストリーミングレスポンスに対応するためにジェネレータとして定義されています。
-# エージェントが回答の生成を終えてからレスポンスを受け取ることも可能です。"""
-#     _id = "c55bb571-498a-4db9-9da0-e9e35d46906b"
+    # documentを更新
+    text = """ストリーミングレスポンスに対応するためにジェネレータとして定義されています。
+エージェントが回答の生成を終えてからレスポンスを受け取ることも可能です。"""
+#     _id = "989af836-cf9b-44c7-93d2-deff7aeae51f"
 #     print(cosmos_manager.update_document(_id, text))
+
+
+    cosmos_manager.update_document(
+        id="98941def-479c-4292-ad68-1d6dd9f4800e",
+        text=text,
+        text_type="markdown",
+    )
+    cosmos_manager.update_document(
+        id="98941def-479c-4292-ad68-1d6dd9f4800e",
+        text=text,
+        text_type="markdown",
+    )
