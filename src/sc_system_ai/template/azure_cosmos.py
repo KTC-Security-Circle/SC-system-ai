@@ -170,8 +170,8 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         if text is not None:
             if text_type is None:
                 raise TypeError("textを更新する際はtext_typeを指定してください。")
-            result = self._update_text(
-                id, text, text_type, item["metadata"].get("group_id", None)
+            result = self._text_updater(
+                id, text, text_type, metadata, item["metadata"].get("group_id", None)
             )
 
         if any([title, metadata, del_metadata]):
@@ -261,11 +261,12 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
                 })
         return patch
 
-    def _update_text(
+    def _text_updater(
         self,
         id: str,
         text: str,
         text_type: Literal["markdown", "plain"],
+        metadata: dict[str, Any] | None = None,
         group_id: str | None = None,
     ) -> list[str]:
         """textを更新する関数"""
@@ -277,7 +278,7 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             for d in data:
                 self.delete_document_by_id(d["id"])
 
-        ids = self.create_document(text, text_type)
+        ids = self.create_document(text, text_type, metadata=metadata)
         patch = [{
             "op": "replace",
             "path": "/metadata/created_at",

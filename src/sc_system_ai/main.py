@@ -60,7 +60,7 @@ agent = ClassifyAgent(user_info=user)
 import logging
 from collections.abc import Iterator
 from importlib import import_module
-from typing import Literal
+from typing import Literal, TypedDict, cast
 
 from sc_system_ai.template.agent import Agent
 from sc_system_ai.template.ai_settings import llm
@@ -68,7 +68,12 @@ from sc_system_ai.template.user_prompts import User
 
 logger = logging.getLogger(__name__)
 
-AGENT = Literal["classify", "dummy"]
+AGENT = Literal["classify", "dummy", "search_school_data"]
+
+class Response(TypedDict):
+    output: str | None
+    error: str | None
+    document_id: list[str] | None
 
 class Chat:
     """Chatクラス
@@ -139,7 +144,7 @@ class Chat:
         self,
         message: str,
         command: AGENT = "classify"
-    ) -> Iterator[str]:
+    ) -> Iterator[Response]:
         """エージェントを呼び出し、チャットを行う関数
 
         Args:
@@ -162,20 +167,15 @@ class Chat:
         if self.is_streaming:
             for resp in self.agent.invoke(message):
                 if type(resp) is str:
-                    yield resp
+                    yield self._create_response({"output": resp})
         else:
             resp = next(self.agent.invoke(message))
-
-            if type(resp) is dict:
-                if "error" in resp:
-                    yield resp["error"]
-                else:
-                    yield resp["output"]
+            yield self._create_response(cast(dict, resp))
 
     def _call_agent(self, command: AGENT) -> None:
         try:
             module_name = f"sc_system_ai.agents.{command}_agent"
-            class_name = f"{command.capitalize()}Agent"
+            class_name = "".join([cn.capitalize() for cn in command.split("_")]) + "Agent"
             module = import_module(module_name)
             agent_class = getattr(module, class_name)
 
@@ -188,6 +188,13 @@ class Chat:
         except (ModuleNotFoundError, AttributeError, ValueError):
             logger.error(f"エージェントが見つかりません: {command}")
             raise ValueError(f"エージェントが見つかりません: {command}") from None
+
+    def _create_response(self, resp: dict) -> Response:
+        return {
+            "output": resp.get("output"),
+            "error": resp.get("error"),
+            "document_id": resp.get("document_id")
+        }
 
 
 
@@ -254,17 +261,17 @@ if __name__ == "__main__":
     )
     message = "私の名前と専攻は何ですか？"
 
-    try:
-        resp = chat.agent.get_response()
-    except Exception:
-        pass
+    # try:
+    #     resp = chat.agent.get_response()
+    # except Exception:
+    #     pass
 
     # # 通常呼び出し
-    # resp = next(chat.invoke(message=message, command="dummy"))
-    # print(resp)
+    resp = next(chat.invoke(message=message, command="dummy"))
+    print(resp)
 
     # ストリーミング呼び出し
-    chat.is_streaming = True
-    for r in chat.invoke(message=message, command="dummy"):
-        print(r)
-    chat.agent.get_response()
+    # chat.is_streaming = True
+    # for r in chat.invoke(message=message, command="dummy"):
+    #     print(r)
+    # chat.agent.get_response()
