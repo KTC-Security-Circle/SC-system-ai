@@ -60,7 +60,7 @@ agent = ClassifyAgent(user_info=user)
 import logging
 from collections.abc import Iterator
 from importlib import import_module
-from typing import Literal
+from typing import Literal, TypedDict
 
 from sc_system_ai.template.agent import Agent
 from sc_system_ai.template.ai_settings import llm
@@ -68,7 +68,12 @@ from sc_system_ai.template.user_prompts import User
 
 logger = logging.getLogger(__name__)
 
-AGENT = Literal["classify", "dummy"]
+AGENT = Literal["classify", "dummy", "search_school_data"]
+
+class Response(TypedDict):
+    output: str | None
+    error: str | None
+    document_id: list[str] | None
 
 class Chat:
     """Chatクラス
@@ -252,19 +257,19 @@ if __name__ == "__main__":
         ],
         is_streaming=False,
     )
-    message = "私の名前と専攻は何ですか？"
+    message = "京都テックについて教えて"
 
-    try:
-        resp = chat.agent.get_response()
-    except Exception:
-        pass
+    # try:
+    #     resp = chat.agent.get_response()
+    # except Exception:
+    #     pass
 
     # # 通常呼び出し
-    # resp = next(chat.invoke(message=message, command="dummy"))
-    # print(resp)
+    resp = next(chat.invoke(message=message, command="search_school_data"))
+    print(resp)
 
     # ストリーミング呼び出し
-    chat.is_streaming = True
-    for r in chat.invoke(message=message, command="dummy"):
-        print(r)
-    chat.agent.get_response()
+    # chat.is_streaming = True
+    # for r in chat.invoke(message=message, command="dummy"):
+    #     print(r)
+    # chat.agent.get_response()
