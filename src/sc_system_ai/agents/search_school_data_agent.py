@@ -41,6 +41,7 @@ class SearchSchoolDataAgent(Agent):
         self.assistant_info = search_school_data_agent_info
 
     def invoke(self, message: str) -> Iterator[SearchSchoolDataAgentResponse]:
+        # Agentクラスのストリーミングを改修後にストリーミング実装
         self.cancel_streaming()
         search = search_school_database_cosmos(message)
         ids = []
