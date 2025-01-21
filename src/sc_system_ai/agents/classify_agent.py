@@ -1,6 +1,7 @@
 from langchain_openai import AzureChatOpenAI
 
 from sc_system_ai.agents.tools.calling_dummy_agent import calling_dummy_agent
+from sc_system_ai.agents.tools.calling_search_school_data_agent import calling_search_school_data_agent
 
 # from sc_system_ai.agents.tools import magic_function
 from sc_system_ai.agents.tools.classify_role import classify_role
@@ -12,7 +13,8 @@ from sc_system_ai.template.user_prompts import User
 classify_agent_tools = [
     # magic_function,
     classify_role,
-    calling_dummy_agent
+    calling_dummy_agent,
+    calling_search_school_data_agent
 ]
 
 classify_agent_info = """あなたの役割は適切なエージェントを選択し処理を引き継ぐことです。
@@ -75,13 +77,13 @@ if __name__ == "__main__":
             break
 
         # 通常の呼び出し
-        # resp = classify_agent.invoke(user)
-        # print(resp)
+        resp = next(classify_agent.invoke(user))
+        print(resp)
 
         # ストリーミング呼び出し
-        for output in classify_agent.invoke(user):
-            print(output)
-        resp = classify_agent.get_response()
+        # for output in classify_agent.invoke(user):
+        #     print(output)
+        # resp = classify_agent.get_response()
 
         if type(resp) is dict:
             new_conversation = [
