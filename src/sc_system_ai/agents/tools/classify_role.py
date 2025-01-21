@@ -26,6 +26,7 @@ class Output(BaseModel):
         "遅延届",
         "早退届",
         "公欠届",
+        "学校情報検索"
     ]
     similarity_score: float = Field(ge=0.0, le=1.0)
 
@@ -88,6 +89,9 @@ dammy_role_data = {
         "遅延届",
         "早退届",
         "公欠届",
+    ],
+    "学校情報検索": [
+        "学校情報の検索"
     ]
 }
 
