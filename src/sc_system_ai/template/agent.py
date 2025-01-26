@@ -39,29 +39,13 @@ class ToolManager:
     """
     def __init__(
             self,
+            queue: Queue,
             tools: list | None = None,
-            is_streaming: bool = True,
-            queue: Queue | None = None,
     ):
         self.tools: list[BaseTool] = []
-        self._is_streaming = is_streaming
-        self.queue = queue if queue is not None else Queue()
-
+        self.queue = queue
         if tools is not None:
             self.set_tools(tools)
-
-    @property
-    def is_streaming(self) -> bool:
-        return self._is_streaming
-
-    @is_streaming.setter
-    def is_streaming(self, is_streaming: bool) -> None:
-        self._is_streaming = is_streaming
-
-        if self._is_streaming:
-            self.tools = self.setup_streaming(self.tools)
-        else:
-            self.cancel_streaming()
 
     def setup_streaming(self, tools: list[BaseTool]) -> list[BaseTool]:
         """ストリーミングのセットアップを行う関数"""
@@ -141,7 +125,7 @@ class Agent:
 
         # assistant_infoとtoolsは各エージェントで設定する
         self.assistant_info = ""
-        self.tool = ToolManager(tools=template_tools, is_streaming=True, queue=self.queue)
+        self.tool = ToolManager(tools=template_tools, queue=self.queue)
 
         self.prompt_template = PromptTemplate(assistant_info=self.assistant_info, user_info=self.user_info)
 
