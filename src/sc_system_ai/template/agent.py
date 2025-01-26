@@ -44,15 +44,14 @@ class ToolManager:
     ):
         self.tools: list[BaseTool] = []
         self.queue = queue
+        self.handler = StreamingToolHandler(self.queue)
         if tools is not None:
             self.set_tools(tools)
 
-    def setup_streaming(self, tools: list[BaseTool]) -> list[BaseTool]:
+    def setup_streaming(self) -> None:
         """ストリーミングのセットアップを行う関数"""
-        self.handler = StreamingToolHandler(self.queue)
-        for tool in tools:
+        for tool in self.tools:
             tool.callbacks = [self.handler]
-        return tools
 
     def cancel_streaming(self) -> None:
         """ストリーミングのセットアップを解除する関数"""
