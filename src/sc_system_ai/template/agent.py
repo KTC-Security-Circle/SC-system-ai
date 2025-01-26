@@ -121,6 +121,7 @@ class Agent:
 
         self.result: AgentResponse
         self.queue: Queue = Queue()
+        self.handler = StreamingAgentHandler(self.queue)
 
         # assistant_infoとtoolsは各エージェントで設定する
         self.assistant_info = ""
@@ -133,16 +134,15 @@ class Agent:
     def setup_streaming(self) -> None:
         """ストリーミング時のセットアップを行う関数"""
         self.clear_queue()
-        self.handler = StreamingAgentHandler(self.queue)
-
-        # llmの設定
         self.llm.streaming = True
         self.llm.callbacks = [self.handler]
+        self.tool.setup_streaming()
 
     def cancel_streaming(self) -> None:
         """ストリーミング時のセットアップを解除する関数"""
         self.llm.streaming = False
         self.llm.callbacks = None
+        self.tool.cancel_streaming()
 
     def clear_queue(self) -> None:
         """キューをクリアする関数"""
