@@ -208,7 +208,7 @@ class Agent:
         """ツールを設定する関数"""
         self.tool.set_tools(tools)
 
-    def invoke(self, message: str) -> Iterator[str | AgentResponse]:
+    def invoke(self, message: str) -> AgentResponse:
         """
         エージェントを実行する関数
 
@@ -236,15 +236,8 @@ class Agent:
             tools=self.tool.tools,
             callbacks= [self.handler] if self._is_streaming else None
         )
-
-        if self._is_streaming:
-            yield from self._streaming_invoke(message)
-        else:
-            self._invoke(message)
-            if "error" in self.result:
-                yield self.result["error"]
-            else:
-                yield self.result
+        self._invoke(message)
+        return self.get_response()
 
     def _invoke(self, message: str) -> None:
         try: # エージェントの実行
@@ -351,10 +344,10 @@ if __name__ == "__main__":
     agent.assistant_info = "あなたは優秀な校正者です。"
     agent.tool.set_tools(tools)
 
-    result = next(agent.invoke("magic function に３"))
+    result = agent.invoke("magic function に３")
     print(result)
 
-    agent.is_streaming = True
-    for output in agent.invoke("magic function に３"):
-        print(output)
-    print(agent.get_response())
+    # agent.is_streaming = True
+    # for output in agent.invoke("magic function に３"):
+    #     print(output)
+    # print(agent.get_response())
