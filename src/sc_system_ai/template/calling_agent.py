@@ -62,14 +62,14 @@ class CallingAgent(BaseTool):
 
         # エージェントの呼び出し
         try:
-            agent = self.agent(user_info=self.user_info, is_streaming=False)
+            agent = self.agent(user_info=self.user_info)
         except Exception as e:
             logger.error(f"エージェントの呼び出しに失敗しました: {e}")
             raise e
         else:
             logger.debug(f"エージェントの呼び出しに成功しました: {self.agent}")
 
-        resp = next(agent.invoke(user_input))
+        resp = agent.invoke(user_input)
 
         return cast(dict[str, Any], resp)
 
