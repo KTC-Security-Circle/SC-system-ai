@@ -66,10 +66,8 @@ class ToolManager:
     def setup_streaming(self, tools: list[BaseTool]) -> list[BaseTool]:
         """ストリーミングのセットアップを行う関数"""
         self.handler = StreamingToolHandler(self.queue)
-
         for tool in tools:
             tool.callbacks = [self.handler]
-
         return tools
 
     def cancel_streaming(self) -> None:
@@ -134,51 +132,20 @@ class Agent:
             self,
             llm: AzureChatOpenAI = llm,
             user_info: User | None = None,
-            is_streaming: bool = True,
-            return_length: int = 5
     ):
         self.llm = llm
         self.user_info = user_info if user_info is not None else User()
 
         self.result: AgentResponse
-        self._is_streaming = is_streaming
-        self._return_length = return_length
         self.queue: Queue = Queue()
 
         # assistant_infoとtoolsは各エージェントで設定する
         self.assistant_info = ""
-        self.tool = ToolManager(tools=template_tools, is_streaming=self._is_streaming, queue=self.queue)
+        self.tool = ToolManager(tools=template_tools, is_streaming=True, queue=self.queue)
 
         self.prompt_template = PromptTemplate(assistant_info=self.assistant_info, user_info=self.user_info)
 
-        if self._is_streaming:
-            self.setup_streaming()
-
         self.get_agent_info()
-
-    @property
-    def is_streaming(self) -> bool:
-        return self._is_streaming
-
-    @is_streaming.setter
-    def is_streaming(self, is_streaming: bool) -> None:
-        self._is_streaming = is_streaming
-        self.tool.is_streaming = is_streaming
-
-        if self._is_streaming:
-            self.setup_streaming()
-        else:
-            self.cancel_streaming()
-
-    @property
-    def return_length(self) -> int:
-        return self._return_length
-
-    @return_length.setter
-    def return_length(self, return_length: int) -> None:
-        if return_length <= 0:
-            raise ValueError("return_lengthは1以上の整数である必要があります。")
-        self._return_length = return_length
 
     def setup_streaming(self) -> None:
         """ストリーミング時のセットアップを行う関数"""
@@ -227,10 +194,14 @@ class Agent:
         ```
         """
         self.cancel_streaming()
-        self._invoke(message)
+        self._invoke(message, False)
         return self.get_response()
 
-    async def stream(self, message: str, return_length: int) -> AsyncIterator[AgentResponse]:
+    async def stream(
+        self,
+        message: str,
+        return_length: int = 5
+    ) -> AsyncIterator[AgentResponse]:
         """
         エージェントをストリーミングで実行する関数
 
@@ -244,7 +215,7 @@ class Agent:
         """
         self.setup_streaming()
         phrase = ""
-        thread = Thread(target=self._invoke, args=(message,))
+        thread = Thread(target=self._invoke, args=(message, True,))
         thread.start()
         try:
             while True:
@@ -266,7 +237,7 @@ class Agent:
             thread.join()
         yield {"output": phrase}
 
-    def _invoke(self, message: str) -> None:
+    def _invoke(self, message: str, streaming: bool) -> None:
         agent = create_tool_calling_agent(
             llm=self.llm,
             tools=self.tool.tools,
@@ -275,7 +246,7 @@ class Agent:
         agent_executor = AgentExecutor(
             agent=agent,
             tools=self.tool.tools,
-            callbacks= [self.handler] if self._is_streaming else None
+            callbacks= [self.handler] if streaming else None
         )
         try: # エージェントの実行
             logger.info("エージェントの実行を開始します。\n-------------------\n")
@@ -354,7 +325,6 @@ if __name__ == "__main__":
     agent = Agent(
         user_info=user_info,
         llm=llm,
-        is_streaming=True,
     )
     agent.assistant_info = "あなたは優秀な校正者です。"
     agent.tool.set_tools(tools)
