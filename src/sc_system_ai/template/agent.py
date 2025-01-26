@@ -7,7 +7,7 @@ Agentの基底クラスを作成します。このクラスは、エージェン
 
 """
 import logging
-from collections.abc import Iterator
+from collections.abc import AsyncIterator
 from queue import Queue
 from threading import Thread
 from typing import Any, TypedDict, TypeGuard
@@ -226,24 +226,61 @@ class Agent:
         resp = next(agent.invoke("user message"))
         ```
         """
+        self.cancel_streaming()
+        self._invoke(message)
+        return self.get_response()
+
+    async def stream(self, message: str, return_length: int) -> AsyncIterator[AgentResponse]:
+        """
+        エージェントをストリーミングで実行する関数
+
+        Args:
+            message (str): ユーザーからのメッセージ
+
+        ```python
+        for output in agent.stream("user message"):
+            print(output)
+        ```
+        """
+        self.setup_streaming()
+        phrase = ""
+        thread = Thread(target=self._invoke, args=(message,))
+        thread.start()
+        try:
+            while True:
+                if self.queue.empty():
+                    continue
+
+                token = self.handler.queue.get()
+                if token is None:
+                    logger.debug("エージェントの実行が終了しました。")
+                    break
+                phrase += token
+                if len(phrase) >= return_length:
+                    yield {"output": phrase}
+                    phrase = ""
+        except Exception as e:
+            logger.error(f"エラーが発生しました:{e}")
+
+        if thread and thread.is_alive():
+            thread.join()
+        yield {"output": phrase}
+
+    def _invoke(self, message: str) -> None:
         agent = create_tool_calling_agent(
             llm=self.llm,
             tools=self.tool.tools,
             prompt=self.prompt_template.full_prompt
         )
-        self.agent_executor = AgentExecutor(
+        agent_executor = AgentExecutor(
             agent=agent,
             tools=self.tool.tools,
             callbacks= [self.handler] if self._is_streaming else None
         )
-        self._invoke(message)
-        return self.get_response()
-
-    def _invoke(self, message: str) -> None:
         try: # エージェントの実行
             logger.info("エージェントの実行を開始します。\n-------------------\n")
             logger.debug(f"最終的なプロンプト: {self.prompt_template.full_prompt.messages}")
-            resp = self.agent_executor.invoke({
+            resp = agent_executor.invoke({
                 "chat_history": self.user_info.conversations.format_conversation(),
                 "messages": message,
             })
@@ -264,30 +301,6 @@ class Agent:
             if all(key in response for key in ["chat_history", "messages", "output"]):
                 return True
         return False
-
-    def _streaming_invoke(self, message: str) -> Iterator[str]:
-        phrase = ""
-        thread = Thread(target=self._invoke, args=(message,))
-
-        thread.start()
-        try:
-            while True:
-                token = self.handler.queue.get()
-                if token is None:
-                    break
-
-                phrase += token
-                if len(phrase) >= self._return_length:
-                    yield phrase
-                    phrase = ""
-        except Exception as e:
-            logger.error(f"エラーが発生しました:{e}")
-        finally:
-            yield phrase
-
-            #クリーンアップ
-            if thread and thread.is_alive():
-                thread.join()
 
     def get_response(self) -> AgentResponse:
         """エージェントのレスポンスを取得する関数"""
@@ -323,6 +336,8 @@ class Agent:
 
 
 if __name__ == "__main__":
+    import asyncio
+
     from sc_system_ai.logging_config import setup_logging
     setup_logging()
     # ユーザー情報
@@ -339,15 +354,16 @@ if __name__ == "__main__":
     agent = Agent(
         user_info=user_info,
         llm=llm,
-        is_streaming=False
+        is_streaming=True,
     )
     agent.assistant_info = "あなたは優秀な校正者です。"
     agent.tool.set_tools(tools)
 
-    result = agent.invoke("magic function に３")
-    print(result)
+    # result = agent.invoke("magic function に３")
+    # print(result)
 
-    # agent.is_streaming = True
-    # for output in agent.invoke("magic function に３"):
-    #     print(output)
-    # print(agent.get_response())
+    async def main() -> None:
+        async for output in agent.stream("magic function に３", 5):
+            print(output)
+
+    asyncio.run(main())
