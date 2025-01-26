@@ -49,14 +49,10 @@ class DummyAgent(Agent):
             self,
             llm: AzureChatOpenAI = llm,
             user_info: User | None = None,
-            is_streaming: bool = True,
-            return_length: int = 5
     ):
         super().__init__(
             llm=llm,
             user_info=user_info if user_info is not None else User(),
-            is_streaming=is_streaming,
-            return_length=return_length
         )
         self.assistant_info = dummy_agent_info
         super().set_assistant_info(self.assistant_info)

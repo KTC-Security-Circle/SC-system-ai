@@ -1,6 +1,3 @@
-from collections.abc import Iterator
-from typing import cast
-
 from langchain_openai import AzureChatOpenAI
 
 # from sc_system_ai.agents.tools import magic_function
@@ -29,18 +26,14 @@ class SearchSchoolDataAgent(Agent):
             self,
             llm: AzureChatOpenAI = llm,
             user_info: User | None = None,
-            is_streaming: bool = True,
-            return_length: int = 5
     ):
         super().__init__(
             llm=llm,
             user_info=user_info if user_info is not None else User(),
-            is_streaming=is_streaming,
-            return_length=return_length
         )
         self.assistant_info = search_school_data_agent_info
 
-    def invoke(self, message: str) -> Iterator[SearchSchoolDataAgentResponse]:
+    def invoke(self, message: str) -> SearchSchoolDataAgentResponse:
         # Agentクラスのストリーミングを改修後にストリーミング実装
         self.cancel_streaming()
         search = search_school_database_cosmos(message)
@@ -50,11 +43,11 @@ class SearchSchoolDataAgent(Agent):
             ids.append(doc.metadata["id"])
         super().set_assistant_info(self.assistant_info)
 
-        resp = cast(AgentResponse, next(super().invoke(message)))
-        yield {
-            **resp,
-            "document_id": ids
-        }
+        resp = super().invoke(message)
+        return SearchSchoolDataAgentResponse(
+            document_id=ids,
+            **resp
+        )
 
 if __name__ == "__main__":
     from sc_system_ai.logging_config import setup_logging
@@ -68,5 +61,5 @@ if __name__ == "__main__":
     ]
     user_info = User(name=user_name, major=user_major)
     user_info.conversations.add_conversations_list(history)
-    agent = SearchSchoolDataAgent(user_info=user_info, is_streaming=False)
-    print(next(agent.invoke("京都テックについて教えて")))
+    agent = SearchSchoolDataAgent(user_info=user_info)
+    print(agent.invoke("京都テックについて教えて"))

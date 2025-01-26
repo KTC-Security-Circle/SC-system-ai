@@ -1,5 +1,4 @@
-from collections.abc import Iterator
-from typing import Any, cast
+from typing import cast
 
 from langchain_openai import AzureChatOpenAI
 
@@ -35,14 +34,10 @@ class ClassifyAgent(Agent):
             self,
             llm: AzureChatOpenAI = llm,
             user_info: User | None = None,
-            is_streaming: bool = True,
-            return_length: int = 5
     ):
         super().__init__(
             llm=llm,
             user_info=user_info if user_info is not None else User(),
-            is_streaming=is_streaming,
-            return_length=return_length
         )
         self.assistant_info = classify_agent_info
         super().set_assistant_info(self.assistant_info)
@@ -53,16 +48,17 @@ class ClassifyAgent(Agent):
         for tool in tools:
             if isinstance(tool, CallingAgent):
                 tool.set_user_info(self.user_info)
-
         super().set_tools(tools)
 
-    def invoke(self, message: str) -> Iterator[str | AgentResponse | SearchSchoolDataAgentResponse]:
-        if self.is_streaming:
-            yield from super().invoke(message)
+    def invoke(self, message: str) -> AgentResponse | SearchSchoolDataAgentResponse:
+        # toolの出力を整形
+        resp = super().invoke(message)
+        if type(resp["output"]) is str:
+            return resp
         else:
-            # ツールの出力をそのまま返却
-            resp = cast(dict[str, Any], next(super().invoke(message)))
-            yield resp["output"]
+            return cast(
+                AgentResponse | SearchSchoolDataAgentResponse, resp["output"]
+            )
 
 
 if __name__ == "__main__":
@@ -79,7 +75,7 @@ if __name__ == "__main__":
     user_info.conversations.add_conversations_list(history)
 
     while True:
-        classify_agent = ClassifyAgent(user_info=user_info, is_streaming=False)
+        classify_agent = ClassifyAgent(user_info=user_info)
         # classify_agent.display_agent_info()
         # print(main_agent.get_agent_prompt())
         # classify_agent.display_agent_prompt()
@@ -89,7 +85,7 @@ if __name__ == "__main__":
             break
 
         # 通常の呼び出し
-        resp = next(classify_agent.invoke(user))
+        resp = classify_agent.invoke(user)
         print(resp)
 
         # ストリーミング呼び出し
