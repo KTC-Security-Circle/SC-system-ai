@@ -1,4 +1,5 @@
 # ダミーのエージェント
+from typing import cast
 
 from langchain_openai import AzureChatOpenAI
 
@@ -92,9 +93,9 @@ if __name__ == "__main__":
             print(output)
         resp = dummy_agent.get_response()
 
-        if type(resp) is dict:
+        if resp.error is not None:
             new_conversation = [
                 ("human", user),
-                ("ai", resp["output"])
+                ("ai", cast(str, resp.output))
             ]
             user_info.conversations.add_conversations_list(new_conversation)
