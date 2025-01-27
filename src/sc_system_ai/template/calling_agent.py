@@ -1,5 +1,5 @@
 import logging
-from typing import Any, cast
+from typing import cast
 
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, ConfigDict, Field
@@ -57,7 +57,7 @@ class CallingAgent(BaseTool):
     def _run(
             self,
             user_input: str,
-        ) -> dict[str, Any]:
+        ) -> str:
         logger.info(f"Calling Agent Toolが次の値で呼び出されました: {user_input}")
 
         # エージェントの呼び出し
@@ -70,8 +70,9 @@ class CallingAgent(BaseTool):
             logger.debug(f"エージェントの呼び出しに成功しました: {self.agent}")
 
         resp = agent.invoke(user_input)
-
-        return cast(dict[str, Any], resp)
+        if resp.error is not None:
+            return resp.error
+        return cast(str, resp.output)
 
     def set_user_info(self, user_info: User) -> None:
         """ユーザー情報の設定
