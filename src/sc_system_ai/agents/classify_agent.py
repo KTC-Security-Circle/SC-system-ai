@@ -8,6 +8,7 @@ from sc_system_ai.agents.tools.calling_search_school_data_agent import (
     CallingSearchSchoolDataAgent,
     calling_search_school_data_agent,
 )
+from sc_system_ai.agents.tools.calling_small_talk_agent import calling_small_talk_agent
 from sc_system_ai.agents.tools.classify_role import classify_role
 from sc_system_ai.template.agent import Agent, AgentResponse
 from sc_system_ai.template.ai_settings import llm
@@ -18,7 +19,8 @@ classify_agent_tools = [
     # magic_function,
     classify_role,
     calling_dummy_agent,
-    calling_search_school_data_agent
+    calling_search_school_data_agent,
+    calling_small_talk_agent,
 ]
 
 classify_agent_info = """あなたの役割は適切なエージェントを選択し処理を引き継ぐことです。
