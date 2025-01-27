@@ -1,3 +1,5 @@
+from collections.abc import AsyncIterator
+
 from langchain_openai import AzureChatOpenAI
 
 # from sc_system_ai.agents.tools import magic_function
@@ -33,20 +35,32 @@ class SearchSchoolDataAgent(Agent):
         )
         self.assistant_info = search_school_data_agent_info
 
-    def invoke(self, message: str) -> SearchSchoolDataAgentResponse:
-        # Agentクラスのストリーミングを改修後にストリーミング実装
-        self.cancel_streaming()
+    def _add_search_result(self, message: str) -> list[str]:
         search = search_school_database_cosmos(message)
         ids = []
         for doc in search:
             self.assistant_info += f"### {doc.metadata['title']}\n" + doc.page_content + "\n"
             ids.append(doc.metadata["id"])
         super().set_assistant_info(self.assistant_info)
+        return ids
 
+    def invoke(self, message: str) -> SearchSchoolDataAgentResponse:
+        # Agentクラスのストリーミングを改修後にストリーミング実装
+        ids = self._add_search_result(message)
         resp = super().invoke(message)
         return SearchSchoolDataAgentResponse(
             document_id=ids,
             **resp
+        )
+
+    async def stream(self, message: str, return_length: int = 5) -> AsyncIterator[AgentResponse]:
+        ids = self._add_search_result(message)
+        async for resp in super().stream(message, return_length):
+            yield resp
+        result = self.get_response()
+        self.result = SearchSchoolDataAgentResponse(
+            document_id=ids,
+            **result
         )
 
 if __name__ == "__main__":
