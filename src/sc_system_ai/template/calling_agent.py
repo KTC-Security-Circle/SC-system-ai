@@ -4,7 +4,7 @@ from typing import cast
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, ConfigDict, Field
 
-from sc_system_ai.template.agent import Agent
+from sc_system_ai.template.agent import Agent, AgentResponse
 from sc_system_ai.template.user_prompts import User
 
 logger = logging.getLogger(__name__)
@@ -50,6 +50,8 @@ class CallingAgent(BaseTool):
 
     user_info: User = Field(description="ユーザー情報", default=User())
     agent: type[Agent] = Agent
+    # AgentResponseを保持する変数
+    response: AgentResponse | None = None
 
     def __init__(self) -> None:
         super().__init__()
@@ -70,6 +72,7 @@ class CallingAgent(BaseTool):
             logger.debug(f"エージェントの呼び出しに成功しました: {self.agent}")
 
         resp = agent.invoke(user_input)
+        self.response = resp
         if resp.error is not None:
             return resp.error
         return cast(str, resp.output)
