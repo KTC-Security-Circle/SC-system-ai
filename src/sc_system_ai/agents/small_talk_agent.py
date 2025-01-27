@@ -6,7 +6,9 @@ from sc_system_ai.template.ai_settings import llm
 from sc_system_ai.template.user_prompts import User
 
 main_agent_tools = [magic_function]
-main_agent_info = "あなたの役割はユーザーと雑談を行うことです。"
+main_agent_info = """あなたの役割はユーザーと雑談を行うことです。
+ユーザーが楽しめるような会話になるようにしてください。
+"""
 
 # agentクラスの作成
 
