@@ -60,7 +60,7 @@ agent = ClassifyAgent(user_info=user)
 import logging
 from collections.abc import AsyncIterator
 from importlib import import_module
-from typing import Literal, TypedDict, cast
+from typing import Literal, TypedDict
 
 from sc_system_ai.template.agent import Agent
 from sc_system_ai.template.ai_settings import llm
@@ -74,6 +74,11 @@ class Response(TypedDict):
     output: str | None
     error: str | None
     document_id: list[str] | None
+
+class StreamResponse(TypedDict):
+    output: str | None
+    error: str | None
+    status: str | None
 
 class Chat:
     """Chatクラス
@@ -160,14 +165,19 @@ class Chat:
         - dummy: ダミーエージェント
         """
         self._call_agent(command)
-        return self._create_response(cast(dict, self.agent.invoke(message)))
+        resp = self.agent.invoke(message)
+        return {
+            "output": resp.output,
+            "error": resp.error,
+            "document_id": resp.document_id
+        }
 
     async def stream(
         self,
         message: str,
         return_length: int = 5,
         command: AGENT = "classify"
-    ) -> AsyncIterator[Response]:
+    ) -> AsyncIterator[StreamResponse]:
         """エージェントを呼び出し、ストリーミングチャットを行う関数
 
         Args:
@@ -190,7 +200,11 @@ class Chat:
         """
         self._call_agent(command)
         async for resp in self.agent.stream(message, return_length):
-            yield self._create_response(cast(dict, resp))
+            yield {
+                "output": resp.output,
+                "error": resp.error,
+                "status": resp.status
+            }
 
     def _call_agent(self, command: AGENT) -> None:
         try:
@@ -206,14 +220,6 @@ class Chat:
         except (ModuleNotFoundError, AttributeError, ValueError):
             logger.error(f"エージェントが見つかりません: {command}")
             raise ValueError(f"エージェントが見つかりません: {command}") from None
-
-    def _create_response(self, resp: dict) -> Response:
-        return {
-            "output": resp.get("output"),
-            "error": resp.get("error"),
-            "document_id": resp.get("document_id")
-        }
-
 
 
 def static_chat() -> None:
@@ -262,6 +268,8 @@ async def streaming_chat() -> None:
 
 
 if __name__ == "__main__":
+    import asyncio
+
     from sc_system_ai.logging_config import setup_logging
     setup_logging()
 
@@ -284,11 +292,12 @@ if __name__ == "__main__":
     #     pass
 
     # # 通常呼び出し
-    resp = chat.invoke(message=message, command="dummy")
-    print(resp)
+    # resp = chat.invoke(message=message, command="dummy")
+    # print(resp)
 
     # ストリーミング呼び出し
-    # chat.is_streaming = True
-    # for r in chat.invoke(message=message, command="dummy"):
-    #     print(r)
-    # chat.agent.get_response()
+    async def stream() -> None:
+        async for r in chat.stream(message=message, command="dummy"):
+            print(r)
+    asyncio.run(stream())
+
