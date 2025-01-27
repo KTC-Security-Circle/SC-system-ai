@@ -3,9 +3,11 @@ from typing import cast
 from langchain_openai import AzureChatOpenAI
 
 # from sc_system_ai.agents.tools import magic_function
-from sc_system_ai.agents.search_school_data_agent import SearchSchoolDataAgentResponse
 from sc_system_ai.agents.tools.calling_dummy_agent import calling_dummy_agent
-from sc_system_ai.agents.tools.calling_search_school_data_agent import calling_search_school_data_agent
+from sc_system_ai.agents.tools.calling_search_school_data_agent import (
+    CallingSearchSchoolDataAgent,
+    calling_search_school_data_agent,
+)
 from sc_system_ai.agents.tools.classify_role import classify_role
 from sc_system_ai.template.agent import Agent, AgentResponse
 from sc_system_ai.template.ai_settings import llm
@@ -20,6 +22,7 @@ classify_agent_tools = [
 ]
 
 classify_agent_info = """あなたの役割は適切なエージェントを選択し処理を引き継ぐことです。
+あなたがユーザーと会話を行ってはいけません。
 ユーザーの入力、会話の流れから適切なエージェントを選択してください。
 引き継いだエージェントが処理を完了するまで、そのエージェントがユーザーと会話を続けるようにしてください。
 
@@ -50,15 +53,21 @@ class ClassifyAgent(Agent):
                 tool.set_user_info(self.user_info)
         super().set_tools(tools)
 
-    def invoke(self, message: str) -> AgentResponse | SearchSchoolDataAgentResponse:
-        # toolの出力を整形
+    def invoke(self, message: str) -> AgentResponse:
+        # toolの出力がAgentReaponseで返って来るので整形
         resp = super().invoke(message)
-        if type(resp["output"]) is str:
-            return resp
-        else:
-            return cast(
-                AgentResponse | SearchSchoolDataAgentResponse, resp["output"]
-            )
+        resp.document_id = self._doc_id_checker()
+        return resp
+
+    def _doc_id_checker(self) -> list[str] | None:
+        """
+        ドキュメントIDが存在するか確認する
+        """
+        for tool in self.tool.tools:
+            if isinstance(tool, CallingSearchSchoolDataAgent):
+                if tool.document_id is not None:
+                    return tool.document_id
+        return None
 
 
 if __name__ == "__main__":
@@ -93,9 +102,9 @@ if __name__ == "__main__":
         #     print(output)
         # resp = classify_agent.get_response()
 
-        if type(resp) is dict:
+        if type(resp) is AgentResponse:
             new_conversation = [
                 ("human", user),
-                ("ai", resp["output"])
+                ("ai", cast(str,resp.output))
             ]
             user_info.conversations.add_conversations_list(new_conversation)
