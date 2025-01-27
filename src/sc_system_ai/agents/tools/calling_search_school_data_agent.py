@@ -10,6 +10,9 @@ logger = logging.getLogger(__name__)
 
 
 class CallingSearchSchoolDataAgent(CallingAgent):
+    # tool側でidを保持する
+    document_id: list[str] | None = None
+
     def __init__(self) -> None:
         super().__init__()
         self.set_tool_info(
@@ -17,6 +20,11 @@ class CallingSearchSchoolDataAgent(CallingAgent):
             description="学校情報を検索するエージェントを呼び出すツール",
             agent=SearchSchoolDataAgent
         )
+
+    def _run(self, user_input: str) -> str:
+        resp = super()._run(user_input)
+        self.document_id = self.response.document_id if self.response is not None else None
+        return resp
 
 calling_search_school_data_agent = CallingSearchSchoolDataAgent()
 
