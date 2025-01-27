@@ -68,7 +68,7 @@ from sc_system_ai.template.user_prompts import User
 
 logger = logging.getLogger(__name__)
 
-AGENT = Literal["classify", "dummy", "search_school_data"]
+AGENT = Literal["classify", "dummy", "search_school_data", "small_talk"]
 
 class Response(TypedDict):
     output: str | None
