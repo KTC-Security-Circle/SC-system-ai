@@ -93,12 +93,18 @@ agent_info = """
 """
 
 # Agentのレスポンスの型
-class AgentResponse(TypedDict, total=False):
+class AgentResponse(TypedDict):
     """Agentのレスポンスの型"""
-    chat_history: list[HumanMessage | AIMessage]
-    messages: str
-    output: str
-    error: str
+    chat_history: list[HumanMessage | AIMessage] | None
+    messages: str | None
+    output: str | None
+    error: str | None
+    document_id: list[str] | None
+
+class StreamingAgentResponse(TypedDict):
+    """Agentのストリーミングレスポンスの型"""
+    output: str | None
+    error: str | None
 
 # Agentクラスの作成
 class Agent:
