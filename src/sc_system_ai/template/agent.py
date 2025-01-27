@@ -10,13 +10,14 @@ import logging
 from collections.abc import AsyncIterator
 from queue import Queue
 from threading import Thread
-from typing import Any, TypedDict, TypeGuard
+from typing import Any, Literal, TypeGuard
 
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain.tools import BaseTool
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_openai import AzureChatOpenAI
+from pydantic import BaseModel
 
 from sc_system_ai.agents.tools import magic_function, search_duckduckgo
 from sc_system_ai.template.ai_settings import llm
@@ -91,20 +92,22 @@ agent_info = """
     tools: {tools}
 -------------------
 """
-
 # Agentのレスポンスの型
-class AgentResponse(TypedDict):
+class BaseAgentResponse(BaseModel):
     """Agentのレスポンスの型"""
-    chat_history: list[HumanMessage | AIMessage] | None
-    messages: str | None
-    output: str | None
-    error: str | None
-    document_id: list[str] | None
+    output: str | None = None
+    error: str | None = None
 
-class StreamingAgentResponse(TypedDict):
+class AgentResponse(BaseAgentResponse):
+    """Agentのレスポンスの型"""
+    chat_history: list[HumanMessage | AIMessage] | None = None
+    messages: str | None = None
+    document_id: list[str] | None = None
+
+
+class StreamingAgentResponse(BaseAgentResponse):
     """Agentのストリーミングレスポンスの型"""
-    output: str | None
-    error: str | None
+    status: Literal["processing", "completed", "error"] | None = None
 
 # Agentクラスの作成
 class Agent:
@@ -125,7 +128,7 @@ class Agent:
         self.llm = llm
         self.user_info = user_info if user_info is not None else User()
 
-        self.result: AgentResponse
+        self.result = AgentResponse()
         self.queue: Queue = Queue()
         self.handler = StreamingAgentHandler(self.queue)
 
@@ -190,7 +193,7 @@ class Agent:
         self,
         message: str,
         return_length: int = 5
-    ) -> AsyncIterator[AgentResponse]:
+    ) -> AsyncIterator[StreamingAgentResponse]:
         """
         エージェントをストリーミングで実行する関数
 
@@ -217,14 +220,15 @@ class Agent:
                     break
                 phrase += token
                 if len(phrase) >= return_length:
-                    yield {"output": phrase}
+                    yield StreamingAgentResponse(output=phrase, error=None)
                     phrase = ""
         except Exception as e:
             logger.error(f"エラーが発生しました:{e}")
+            yield StreamingAgentResponse(output=None, error=f"エラーが発生しました:{e}")
 
         if thread and thread.is_alive():
             thread.join()
-        yield {"output": phrase}
+        yield StreamingAgentResponse(output=phrase, error=None)
 
     def _invoke(self, message: str, streaming: bool) -> None:
         agent = create_tool_calling_agent(
@@ -253,7 +257,7 @@ class Agent:
                 raise RuntimeError("エージェントの実行結果取得に失敗しました。")
         except Exception as e:
             logger.error(f"エージェントの実行に失敗しました。エラー内容: {e}")
-            self.result = {"error": f"エージェントの実行に失敗しました。エラー内容: {e}"}
+            self.result["error"] = f"エージェントの実行に失敗しました。エラー内容: {e}"
 
     def _response_checker(self, response: Any) -> TypeGuard[AgentResponse]:
         """レスポンスの型チェック"""
