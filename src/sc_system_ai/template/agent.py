@@ -10,7 +10,7 @@ import logging
 from collections.abc import AsyncIterator
 from queue import Queue
 from threading import Thread
-from typing import Any, Literal, TypeGuard
+from typing import Any, Literal
 
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain.tools import BaseTool
@@ -128,7 +128,7 @@ class Agent:
         self.llm = llm
         self.user_info = user_info if user_info is not None else User()
 
-        self.result = AgentResponse()
+        self.result: AgentResponse
         self.queue: Queue = Queue()
         self.handler = StreamingAgentHandler(self.queue)
 
@@ -220,15 +220,19 @@ class Agent:
                     break
                 phrase += token
                 if len(phrase) >= return_length:
-                    yield StreamingAgentResponse(output=phrase, error=None)
+                    yield StreamingAgentResponse(
+                        output=phrase, error=None, status="processing"
+                    )
                     phrase = ""
         except Exception as e:
             logger.error(f"エラーが発生しました:{e}")
-            yield StreamingAgentResponse(output=None, error=f"エラーが発生しました:{e}")
+            yield StreamingAgentResponse(
+                output=None, error=f"エラーが発生しました:{e}", status="error"
+            )
 
         if thread and thread.is_alive():
             thread.join()
-        yield StreamingAgentResponse(output=phrase, error=None)
+        yield StreamingAgentResponse(output=phrase, error=None, status="completed")
 
     def _invoke(self, message: str, streaming: bool) -> None:
         agent = create_tool_calling_agent(
@@ -249,29 +253,26 @@ class Agent:
                 "messages": message,
             })
 
-            if self._response_checker(resp):
-                self.result = resp
+            if "output" in resp:
+                self.result = AgentResponse(
+                    chat_history=resp.get("chat_history"),
+                    messages=resp.get("messages"),
+                    output=resp.get("output"),
+                )
             else:
                 logger.error("エージェントの実行結果取得に失敗しました。")
                 logger.debug(f"エージェントの実行結果: {resp}")
                 raise RuntimeError("エージェントの実行結果取得に失敗しました。")
         except Exception as e:
             logger.error(f"エージェントの実行に失敗しました。エラー内容: {e}")
-            self.result["error"] = f"エージェントの実行に失敗しました。エラー内容: {e}"
-
-    def _response_checker(self, response: Any) -> TypeGuard[AgentResponse]:
-        """レスポンスの型チェック"""
-        if type(response) is dict:
-            if all(key in response for key in ["chat_history", "messages", "output"]):
-                return True
-        return False
+            self.result = AgentResponse(error=f"エージェントの実行に失敗しました。エラー内容: {e}")
 
     def get_response(self) -> AgentResponse:
         """エージェントのレスポンスを取得する関数"""
         try:
             resp = self.result
         except AttributeError:
-            return {"error": "エージェントの実行結果がありません。"}
+            return AgentResponse(error="エージェントの実行結果がありません。")
         else:
             return resp
 
@@ -327,6 +328,6 @@ if __name__ == "__main__":
 
     async def main() -> None:
         async for output in agent.stream("magic function に３", 5):
-            print(output)
+            print(output.output)
 
     asyncio.run(main())
