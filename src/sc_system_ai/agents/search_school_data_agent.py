@@ -4,7 +4,7 @@ from langchain_openai import AzureChatOpenAI
 
 # from sc_system_ai.agents.tools import magic_function
 from sc_system_ai.agents.tools.search_school_data import search_school_database_cosmos
-from sc_system_ai.template.agent import Agent, AgentResponse
+from sc_system_ai.template.agent import Agent, AgentResponse, StreamingAgentResponse
 from sc_system_ai.template.ai_settings import llm
 from sc_system_ai.template.user_prompts import User
 
@@ -17,9 +17,6 @@ search_school_data_agent_info = """あなたの役割は学校の情報をもと
 
 ## 学校の情報
 """
-
-class SearchSchoolDataAgentResponse(AgentResponse):
-    document_id: list[str]
 
 # agentクラスの作成
 
@@ -44,24 +41,18 @@ class SearchSchoolDataAgent(Agent):
         super().set_assistant_info(self.assistant_info)
         return ids
 
-    def invoke(self, message: str) -> SearchSchoolDataAgentResponse:
+    def invoke(self, message: str) -> AgentResponse:
         # Agentクラスのストリーミングを改修後にストリーミング実装
         ids = self._add_search_result(message)
         resp = super().invoke(message)
-        return SearchSchoolDataAgentResponse(
-            document_id=ids,
-            **resp
-        )
+        resp.document_id = ids
+        return resp
 
-    async def stream(self, message: str, return_length: int = 5) -> AsyncIterator[AgentResponse]:
+    async def stream(self, message: str, return_length: int = 5) -> AsyncIterator[StreamingAgentResponse]:
         ids = self._add_search_result(message)
         async for resp in super().stream(message, return_length):
             yield resp
-        result = self.get_response()
-        self.result = SearchSchoolDataAgentResponse(
-            document_id=ids,
-            **result
-        )
+        self.result.document_id = ids
 
 if __name__ == "__main__":
     from sc_system_ai.logging_config import setup_logging
