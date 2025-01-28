@@ -1,10 +1,12 @@
+import asyncio
 import logging
-from typing import Any, cast
+from queue import Queue
+from typing import cast
 
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, ConfigDict, Field
 
-from sc_system_ai.template.agent import Agent
+from sc_system_ai.template.agent import Agent, AgentResponse
 from sc_system_ai.template.user_prompts import User
 
 logger = logging.getLogger(__name__)
@@ -50,6 +52,12 @@ class CallingAgent(BaseTool):
 
     user_info: User = Field(description="ユーザー情報", default=User())
     agent: type[Agent] = Agent
+    # AgentResponseを保持する変数
+    response: AgentResponse | None = None
+
+    # ストリーミングのセットアップ
+    queue: Queue = Queue()
+    is_streaming: bool = False
 
     def __init__(self) -> None:
         super().__init__()
@@ -57,21 +65,29 @@ class CallingAgent(BaseTool):
     def _run(
             self,
             user_input: str,
-        ) -> dict[str, Any]:
+        ) -> str:
         logger.info(f"Calling Agent Toolが次の値で呼び出されました: {user_input}")
 
         # エージェントの呼び出し
         try:
-            agent = self.agent(user_info=self.user_info, is_streaming=False)
+            agent = self.agent(user_info=self.user_info)
+            agent.queue = self.queue
         except Exception as e:
             logger.error(f"エージェントの呼び出しに失敗しました: {e}")
             raise e
         else:
             logger.debug(f"エージェントの呼び出しに成功しました: {self.agent}")
 
-        resp = next(agent.invoke(user_input))
+        if self.is_streaming:
+            asyncio.run(agent.stream_on_tool(user_input))
+            resp = agent.get_response()
+        else:
+            resp = agent.invoke(user_input)
+            self.response = resp
+            if resp.error is not None:
+                return resp.error
+        return cast(str, resp.output)
 
-        return cast(dict[str, Any], resp)
 
     def set_user_info(self, user_info: User) -> None:
         """ユーザー情報の設定
@@ -101,6 +117,16 @@ class CallingAgent(BaseTool):
         self.name = name
         self.description = description
         self.agent = agent
+
+    def setup_streaming(self, queue: Queue) -> None:
+        """ストリーミングのセットアップ"""
+        self.is_streaming = True
+        self.queue = queue
+
+    def cancel_streaming(self) -> None:
+        """ストリーミングのキャンセル"""
+        self.is_streaming = False
+        self.queue = Queue()
 
 
 calling_agent = CallingAgent()

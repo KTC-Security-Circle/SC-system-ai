@@ -7,16 +7,17 @@ Agentの基底クラスを作成します。このクラスは、エージェン
 
 """
 import logging
-from collections.abc import Iterator
+from collections.abc import AsyncIterator
 from queue import Queue
 from threading import Thread
-from typing import Any, TypedDict, TypeGuard
+from typing import Any, Literal
 
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain.tools import BaseTool
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_openai import AzureChatOpenAI
+from pydantic import BaseModel
 
 from sc_system_ai.agents.tools import magic_function, search_duckduckgo
 from sc_system_ai.template.ai_settings import llm
@@ -39,38 +40,19 @@ class ToolManager:
     """
     def __init__(
             self,
+            queue: Queue,
             tools: list | None = None,
-            is_streaming: bool = True,
-            queue: Queue | None = None,
     ):
         self.tools: list[BaseTool] = []
-        self._is_streaming = is_streaming
-        self.queue = queue if queue is not None else Queue()
-
+        self.queue = queue
+        self.handler = StreamingToolHandler(self.queue)
         if tools is not None:
             self.set_tools(tools)
 
-    @property
-    def is_streaming(self) -> bool:
-        return self._is_streaming
-
-    @is_streaming.setter
-    def is_streaming(self, is_streaming: bool) -> None:
-        self._is_streaming = is_streaming
-
-        if self._is_streaming:
-            self.tools = self.setup_streaming(self.tools)
-        else:
-            self.cancel_streaming()
-
-    def setup_streaming(self, tools: list[BaseTool]) -> list[BaseTool]:
+    def setup_streaming(self) -> None:
         """ストリーミングのセットアップを行う関数"""
-        self.handler = StreamingToolHandler(self.queue)
-
-        for tool in tools:
+        for tool in self.tools:
             tool.callbacks = [self.handler]
-
-        return tools
 
     def cancel_streaming(self) -> None:
         """ストリーミングのセットアップを解除する関数"""
@@ -110,14 +92,22 @@ agent_info = """
     tools: {tools}
 -------------------
 """
-
 # Agentのレスポンスの型
-class AgentResponse(TypedDict, total=False):
+class BaseAgentResponse(BaseModel):
     """Agentのレスポンスの型"""
-    chat_history: list[HumanMessage | AIMessage]
-    messages: str
-    output: str
-    error: str
+    output: str | None = None
+    error: str | None = None
+
+class AgentResponse(BaseAgentResponse):
+    """Agentのレスポンスの型"""
+    chat_history: list[HumanMessage | AIMessage] | None = None
+    messages: str | None = None
+    document_id: list[str] | None = None
+
+
+class StreamingAgentResponse(BaseAgentResponse):
+    """Agentのストリーミングレスポンスの型"""
+    status: Literal["processing", "completed", "error"] | None = None
 
 # Agentクラスの作成
 class Agent:
@@ -134,65 +124,34 @@ class Agent:
             self,
             llm: AzureChatOpenAI = llm,
             user_info: User | None = None,
-            is_streaming: bool = True,
-            return_length: int = 5
     ):
         self.llm = llm
         self.user_info = user_info if user_info is not None else User()
 
         self.result: AgentResponse
-        self._is_streaming = is_streaming
-        self._return_length = return_length
         self.queue: Queue = Queue()
+        self.handler = StreamingAgentHandler(self.queue)
 
         # assistant_infoとtoolsは各エージェントで設定する
         self.assistant_info = ""
-        self.tool = ToolManager(tools=template_tools, is_streaming=self._is_streaming, queue=self.queue)
+        self.tool = ToolManager(tools=template_tools, queue=self.queue)
 
         self.prompt_template = PromptTemplate(assistant_info=self.assistant_info, user_info=self.user_info)
 
-        if self._is_streaming:
-            self.setup_streaming()
-
         self.get_agent_info()
-
-    @property
-    def is_streaming(self) -> bool:
-        return self._is_streaming
-
-    @is_streaming.setter
-    def is_streaming(self, is_streaming: bool) -> None:
-        self._is_streaming = is_streaming
-        self.tool.is_streaming = is_streaming
-
-        if self._is_streaming:
-            self.setup_streaming()
-        else:
-            self.cancel_streaming()
-
-    @property
-    def return_length(self) -> int:
-        return self._return_length
-
-    @return_length.setter
-    def return_length(self, return_length: int) -> None:
-        if return_length <= 0:
-            raise ValueError("return_lengthは1以上の整数である必要があります。")
-        self._return_length = return_length
 
     def setup_streaming(self) -> None:
         """ストリーミング時のセットアップを行う関数"""
         self.clear_queue()
-        self.handler = StreamingAgentHandler(self.queue)
-
-        # llmの設定
         self.llm.streaming = True
         self.llm.callbacks = [self.handler]
+        self.tool.setup_streaming()
 
     def cancel_streaming(self) -> None:
         """ストリーミング時のセットアップを解除する関数"""
         self.llm.streaming = False
         self.llm.callbacks = None
+        self.tool.cancel_streaming()
 
     def clear_queue(self) -> None:
         """キューをクリアする関数"""
@@ -208,7 +167,7 @@ class Agent:
         """ツールを設定する関数"""
         self.tool.set_tools(tools)
 
-    def invoke(self, message: str) -> Iterator[str | AgentResponse]:
+    def invoke(self, message: str) -> AgentResponse:
         """
         エージェントを実行する関数
 
@@ -226,82 +185,119 @@ class Agent:
         resp = next(agent.invoke("user message"))
         ```
         """
+        self.cancel_streaming()
+        self._invoke(message, False)
+        return self.get_response()
+
+    async def stream(
+        self,
+        message: str,
+        return_length: int = 5
+    ) -> AsyncIterator[StreamingAgentResponse]:
+        """
+        エージェントをストリーミングで実行する関数
+
+        Args:
+            message (str): ユーザーからのメッセージ
+
+        ```python
+        for output in agent.stream("user message"):
+            print(output)
+        ```
+        """
+        self.setup_streaming()
+        phrase = ""
+        thread = Thread(target=self._invoke, args=(message, True,))
+        thread.start()
+        try:
+            while True:
+                if self.queue.empty():
+                    continue
+
+                token = self.handler.queue.get()
+                if token is None:
+                    logger.debug("エージェントの実行が終了しました。")
+                    break
+                phrase += token
+                if len(phrase) >= return_length:
+                    yield StreamingAgentResponse(
+                        output=phrase, error=None, status="processing"
+                    )
+                    phrase = ""
+        except Exception as e:
+            logger.error(f"エラーが発生しました:{e}")
+            yield StreamingAgentResponse(
+                output=None, error=f"エラーが発生しました:{e}", status="error"
+            )
+
+        if thread and thread.is_alive():
+            thread.join()
+        yield StreamingAgentResponse(output=phrase, error=None, status="completed")
+
+    def _invoke(self, message: str, streaming: bool) -> None:
         agent = create_tool_calling_agent(
             llm=self.llm,
             tools=self.tool.tools,
             prompt=self.prompt_template.full_prompt
         )
-        self.agent_executor = AgentExecutor(
+        agent_executor = AgentExecutor(
             agent=agent,
             tools=self.tool.tools,
-            callbacks= [self.handler] if self._is_streaming else None
+            callbacks= [self.handler] if streaming else None
         )
-
-        if self._is_streaming:
-            yield from self._streaming_invoke(message)
-        else:
-            self._invoke(message)
-            if "error" in self.result:
-                yield self.result["error"]
-            else:
-                yield self.result
-
-    def _invoke(self, message: str) -> None:
         try: # エージェントの実行
             logger.info("エージェントの実行を開始します。\n-------------------\n")
             logger.debug(f"最終的なプロンプト: {self.prompt_template.full_prompt.messages}")
-            resp = self.agent_executor.invoke({
+            resp = agent_executor.invoke({
                 "chat_history": self.user_info.conversations.format_conversation(),
                 "messages": message,
             })
 
-            if self._response_checker(resp):
-                self.result = resp
+            if "output" in resp:
+                self.result = AgentResponse(
+                    chat_history=resp.get("chat_history"),
+                    messages=resp.get("messages"),
+                    output=resp.get("output"),
+                )
             else:
                 logger.error("エージェントの実行結果取得に失敗しました。")
                 logger.debug(f"エージェントの実行結果: {resp}")
                 raise RuntimeError("エージェントの実行結果取得に失敗しました。")
         except Exception as e:
             logger.error(f"エージェントの実行に失敗しました。エラー内容: {e}")
-            self.result = {"error": f"エージェントの実行に失敗しました。エラー内容: {e}"}
+            self.result = AgentResponse(error=f"エージェントの実行に失敗しました。エラー内容: {e}")
 
-    def _response_checker(self, response: Any) -> TypeGuard[AgentResponse]:
-        """レスポンスの型チェック"""
-        if type(response) is dict:
-            if all(key in response for key in ["chat_history", "messages", "output"]):
-                return True
-        return False
+    async def stream_on_tool(self, message: str) -> None:
+        """ツール上でストリーミングでエージェントを実行する関数"""
+        self.handler.queue = self.queue
+        self.setup_streaming()
+        agent = create_tool_calling_agent(
+            llm=self.llm,
+            tools=self.tool.tools,
+            prompt=self.prompt_template.full_prompt
+        )
+        agent_executor = AgentExecutor(
+            agent=agent,
+            tools=self.tool.tools,
+            callbacks= [self.handler],
+        )
+        resp = await agent_executor.ainvoke({
+            "chat_history": self.user_info.conversations.format_conversation(),
+            "messages": message,
+        })
+        self.result = AgentResponse(
+            chat_history=resp.get("chat_history"),
+            messages=resp.get("messages"),
+            output=resp.get("output"),
+        )
 
-    def _streaming_invoke(self, message: str) -> Iterator[str]:
-        phrase = ""
-        thread = Thread(target=self._invoke, args=(message,))
-
-        thread.start()
-        try:
-            while True:
-                token = self.handler.queue.get()
-                if token is None:
-                    break
-
-                phrase += token
-                if len(phrase) >= self._return_length:
-                    yield phrase
-                    phrase = ""
-        except Exception as e:
-            logger.error(f"エラーが発生しました:{e}")
-        finally:
-            yield phrase
-
-            #クリーンアップ
-            if thread and thread.is_alive():
-                thread.join()
 
     def get_response(self) -> AgentResponse:
         """エージェントのレスポンスを取得する関数"""
         try:
             resp = self.result
         except AttributeError:
-            return {"error": "エージェントの実行結果がありません。"}
+            return AgentResponse(error="エージェントの実行結果がありません。")
         else:
             return resp
 
@@ -330,6 +326,8 @@ class Agent:
 
 
 if __name__ == "__main__":
+    import asyncio
+
     from sc_system_ai.logging_config import setup_logging
     setup_logging()
     # ユーザー情報
@@ -346,15 +344,15 @@ if __name__ == "__main__":
     agent = Agent(
         user_info=user_info,
         llm=llm,
-        is_streaming=False
     )
     agent.assistant_info = "あなたは優秀な校正者です。"
     agent.tool.set_tools(tools)
 
-    result = next(agent.invoke("magic function に３"))
-    print(result)
+    # result = agent.invoke("magic function に３")
+    # print(result)
 
-    agent.is_streaming = True
-    for output in agent.invoke("magic function に３"):
-        print(output)
-    print(agent.get_response())
+    async def main() -> None:
+        async for output in agent.stream("magic function に３", 5):
+            print(output.output)
+
+    asyncio.run(main())

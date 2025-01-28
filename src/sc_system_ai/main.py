@@ -58,9 +58,9 @@ agent = ClassifyAgent(user_info=user)
 """
 
 import logging
-from collections.abc import Iterator
+from collections.abc import AsyncIterator
 from importlib import import_module
-from typing import Literal, TypedDict, cast
+from typing import Literal, TypedDict
 
 from sc_system_ai.template.agent import Agent
 from sc_system_ai.template.ai_settings import llm
@@ -68,12 +68,17 @@ from sc_system_ai.template.user_prompts import User
 
 logger = logging.getLogger(__name__)
 
-AGENT = Literal["classify", "dummy", "search_school_data"]
+AGENT = Literal["classify", "dummy", "search_school_data", "small_talk"]
 
 class Response(TypedDict):
     output: str | None
     error: str | None
     document_id: list[str] | None
+
+class StreamResponse(TypedDict):
+    output: str | None
+    error: str | None
+    status: str | None
 
 class Chat:
     """Chatクラス
@@ -114,16 +119,12 @@ class Chat:
         user_name: str,
         user_major: str,
         conversation: list[tuple[str, str]] | None = None,
-        is_streaming: bool = True,
-        return_length: int = 5
     ) -> None:
         self.user = User(name=user_name, major=user_major)
         if conversation is None:
             conversation = []
 
         self.user.conversations.add_conversations_list(conversation)
-        self.is_streaming = is_streaming
-        self.return_length = return_length
         self._agent: Agent | None = None
 
     @property
@@ -144,7 +145,7 @@ class Chat:
         self,
         message: str,
         command: AGENT = "classify"
-    ) -> Iterator[Response]:
+    ) -> Response:
         """エージェントを呼び出し、チャットを行う関数
 
         Args:
@@ -164,13 +165,46 @@ class Chat:
         - dummy: ダミーエージェント
         """
         self._call_agent(command)
-        if self.is_streaming:
-            for resp in self.agent.invoke(message):
-                if type(resp) is str:
-                    yield self._create_response({"output": resp})
-        else:
-            resp = next(self.agent.invoke(message))
-            yield self._create_response(cast(dict, resp))
+        resp = self.agent.invoke(message)
+        return {
+            "output": resp.output,
+            "error": resp.error,
+            "document_id": resp.document_id
+        }
+
+    async def stream(
+        self,
+        message: str,
+        return_length: int = 5,
+        command: AGENT = "classify"
+    ) -> AsyncIterator[StreamResponse]:
+        """エージェントを呼び出し、ストリーミングチャットを行う関数
+
+        Args:
+            message (str): メッセージ
+            return_length (int, optional): ストリーミングモード時の返答数. デフォルトは5
+            command (AGENT, optional): 呼び出すエージェント。デフォルトでは分類エージェントを呼び出します。
+
+        Returns:
+            Iterator[str]: エージェントからの返答
+
+        コマンドでエージェントを指定して、エージェントを呼び出す場合。
+        ```python
+        for resp in chat.stream(message="私の名前と専攻は何ですか？", command="dummy"):
+            print(resp)
+        ```
+
+        呼び出し可能なエージェント:
+        - classify: 分類エージェント
+        - dummy: ダミーエージェント
+        """
+        self._call_agent(command)
+        async for resp in self.agent.stream(message, return_length):
+            yield {
+                "output": resp.output,
+                "error": resp.error,
+                "status": resp.status
+            }
 
     def _call_agent(self, command: AGENT) -> None:
         try:
@@ -182,20 +216,10 @@ class Chat:
             self.agent = agent_class(
                 llm=llm,
                 user_info=self.user,
-                is_streaming=self.is_streaming,
-                return_length=self.return_length
             )
         except (ModuleNotFoundError, AttributeError, ValueError):
             logger.error(f"エージェントが見つかりません: {command}")
             raise ValueError(f"エージェントが見つかりません: {command}") from None
-
-    def _create_response(self, resp: dict) -> Response:
-        return {
-            "output": resp.get("output"),
-            "error": resp.get("error"),
-            "document_id": resp.get("document_id")
-        }
-
 
 
 def static_chat() -> None:
@@ -212,16 +236,16 @@ def static_chat() -> None:
     user.conversations.add_conversations_list(conversation)
 
     # エージェントの設定
-    agent = Agent(llm=llm, user_info=user, is_streaming=False)
+    agent = Agent(llm=llm, user_info=user)
 
     # メッセージを送信
     message = "私の名前と専攻は何ですか？"
-    resp = next(agent.invoke(message))
+    resp = agent.invoke(message)
     print(resp)
 
 
 
-def streaming_chat() -> None:
+async def streaming_chat() -> None:
     # ユーザー情報
     user_name = "hogehoge"
     user_major = "fugafuga専攻"
@@ -235,15 +259,17 @@ def streaming_chat() -> None:
     user.conversations.add_conversations_list(conversation)
 
     # エージェントの設定
-    agent = Agent(llm=llm, user_info=user, is_streaming=True)
+    agent = Agent(llm=llm, user_info=user)
 
     # メッセージを送信
     message = "私の名前と専攻は何ですか？"
-    for resp in agent.invoke(message):
+    async for resp in agent.stream(message):
         print(resp)
 
 
 if __name__ == "__main__":
+    import asyncio
+
     from sc_system_ai.logging_config import setup_logging
     setup_logging()
 
@@ -257,7 +283,6 @@ if __name__ == "__main__":
             ("human", "こんにちは!"),
             ("ai", "本日はどのようなご用件でしょうか？")
         ],
-        is_streaming=False,
     )
     message = "私の名前と専攻は何ですか？"
 
@@ -267,11 +292,12 @@ if __name__ == "__main__":
     #     pass
 
     # # 通常呼び出し
-    resp = next(chat.invoke(message=message, command="dummy"))
-    print(resp)
+    # resp = chat.invoke(message=message, command="dummy")
+    # print(resp)
 
     # ストリーミング呼び出し
-    # chat.is_streaming = True
-    # for r in chat.invoke(message=message, command="dummy"):
-    #     print(r)
-    # chat.agent.get_response()
+    async def stream() -> None:
+        async for r in chat.stream(message="京都テックについて教えて"):
+            print(r)
+    asyncio.run(stream())
+

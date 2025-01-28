@@ -1,14 +1,17 @@
-from collections.abc import Iterator
-from typing import Any, cast
+from collections.abc import AsyncIterator
+from typing import cast
 
 from langchain_openai import AzureChatOpenAI
 
 # from sc_system_ai.agents.tools import magic_function
-from sc_system_ai.agents.search_school_data_agent import SearchSchoolDataAgentResponse
 from sc_system_ai.agents.tools.calling_dummy_agent import calling_dummy_agent
-from sc_system_ai.agents.tools.calling_search_school_data_agent import calling_search_school_data_agent
+from sc_system_ai.agents.tools.calling_search_school_data_agent import (
+    CallingSearchSchoolDataAgent,
+    calling_search_school_data_agent,
+)
+from sc_system_ai.agents.tools.calling_small_talk_agent import calling_small_talk_agent
 from sc_system_ai.agents.tools.classify_role import classify_role
-from sc_system_ai.template.agent import Agent, AgentResponse
+from sc_system_ai.template.agent import Agent, AgentResponse, StreamingAgentResponse
 from sc_system_ai.template.ai_settings import llm
 from sc_system_ai.template.calling_agent import CallingAgent
 from sc_system_ai.template.user_prompts import User
@@ -17,14 +20,14 @@ classify_agent_tools = [
     # magic_function,
     classify_role,
     calling_dummy_agent,
-    calling_search_school_data_agent
+    calling_search_school_data_agent,
+    calling_small_talk_agent,
 ]
 
 classify_agent_info = """あなたの役割は適切なエージェントを選択し処理を引き継ぐことです。
+あなたがユーザーと会話を行ってはいけません。
 ユーザーの入力、会話の流れから適切なエージェントを選択してください。
 引き継いだエージェントが処理を完了するまで、そのエージェントがユーザーと会話を続けるようにしてください。
-
-適切なエージェントの選択、呼び出しができなかった場合は、そのままユーザーとの会話を続けてください。
 """
 
 # agentクラスの作成
@@ -35,14 +38,10 @@ class ClassifyAgent(Agent):
             self,
             llm: AzureChatOpenAI = llm,
             user_info: User | None = None,
-            is_streaming: bool = True,
-            return_length: int = 5
     ):
         super().__init__(
             llm=llm,
             user_info=user_info if user_info is not None else User(),
-            is_streaming=is_streaming,
-            return_length=return_length
         )
         self.assistant_info = classify_agent_info
         super().set_assistant_info(self.assistant_info)
@@ -53,16 +52,33 @@ class ClassifyAgent(Agent):
         for tool in tools:
             if isinstance(tool, CallingAgent):
                 tool.set_user_info(self.user_info)
-
         super().set_tools(tools)
 
-    def invoke(self, message: str) -> Iterator[str | AgentResponse | SearchSchoolDataAgentResponse]:
-        if self.is_streaming:
-            yield from super().invoke(message)
-        else:
-            # ツールの出力をそのまま返却
-            resp = cast(dict[str, Any], next(super().invoke(message)))
-            yield resp["output"]
+    def invoke(self, message: str) -> AgentResponse:
+        # toolの出力がAgentReaponseで返って来るので整形
+        for tool in self.tool.tools:
+            if isinstance(tool, CallingAgent):
+                tool.cancel_streaming()
+        resp = super().invoke(message)
+        resp.document_id = self._doc_id_checker()
+        return resp
+
+    def _doc_id_checker(self) -> list[str] | None:
+        """
+        ドキュメントIDが存在するか確認する
+        """
+        for tool in self.tool.tools:
+            if isinstance(tool, CallingSearchSchoolDataAgent):
+                if tool.document_id is not None:
+                    return tool.document_id
+        return None
+
+    async def stream(self, message: str, return_length: int = 5) -> AsyncIterator[StreamingAgentResponse]:
+        for tool in self.tool.tools:
+            if isinstance(tool, CallingAgent):
+                tool.setup_streaming(self.queue)
+        async for output in super().stream(message, return_length):
+            yield output
 
 
 if __name__ == "__main__":
@@ -79,7 +95,7 @@ if __name__ == "__main__":
     user_info.conversations.add_conversations_list(history)
 
     while True:
-        classify_agent = ClassifyAgent(user_info=user_info, is_streaming=False)
+        classify_agent = ClassifyAgent(user_info=user_info)
         # classify_agent.display_agent_info()
         # print(main_agent.get_agent_prompt())
         # classify_agent.display_agent_prompt()
@@ -89,7 +105,7 @@ if __name__ == "__main__":
             break
 
         # 通常の呼び出し
-        resp = next(classify_agent.invoke(user))
+        resp = classify_agent.invoke(user)
         print(resp)
 
         # ストリーミング呼び出し
@@ -97,9 +113,9 @@ if __name__ == "__main__":
         #     print(output)
         # resp = classify_agent.get_response()
 
-        if type(resp) is dict:
+        if type(resp) is AgentResponse:
             new_conversation = [
                 ("human", user),
-                ("ai", resp["output"])
+                ("ai", cast(str,resp.output))
             ]
             user_info.conversations.add_conversations_list(new_conversation)

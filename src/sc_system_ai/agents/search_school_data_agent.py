@@ -1,11 +1,10 @@
-from collections.abc import Iterator
-from typing import cast
+from collections.abc import AsyncIterator
 
 from langchain_openai import AzureChatOpenAI
 
 # from sc_system_ai.agents.tools import magic_function
 from sc_system_ai.agents.tools.search_school_data import search_school_database_cosmos
-from sc_system_ai.template.agent import Agent, AgentResponse
+from sc_system_ai.template.agent import Agent, AgentResponse, StreamingAgentResponse
 from sc_system_ai.template.ai_settings import llm
 from sc_system_ai.template.user_prompts import User
 
@@ -19,9 +18,6 @@ search_school_data_agent_info = """あなたの役割は学校の情報をもと
 ## 学校の情報
 """
 
-class SearchSchoolDataAgentResponse(AgentResponse):
-    document_id: list[str]
-
 # agentクラスの作成
 
 class SearchSchoolDataAgent(Agent):
@@ -29,32 +25,34 @@ class SearchSchoolDataAgent(Agent):
             self,
             llm: AzureChatOpenAI = llm,
             user_info: User | None = None,
-            is_streaming: bool = True,
-            return_length: int = 5
     ):
         super().__init__(
             llm=llm,
             user_info=user_info if user_info is not None else User(),
-            is_streaming=is_streaming,
-            return_length=return_length
         )
         self.assistant_info = search_school_data_agent_info
 
-    def invoke(self, message: str) -> Iterator[SearchSchoolDataAgentResponse]:
-        # Agentクラスのストリーミングを改修後にストリーミング実装
-        self.cancel_streaming()
+    def _add_search_result(self, message: str) -> list[str]:
         search = search_school_database_cosmos(message)
         ids = []
         for doc in search:
             self.assistant_info += f"### {doc.metadata['title']}\n" + doc.page_content + "\n"
             ids.append(doc.metadata["id"])
         super().set_assistant_info(self.assistant_info)
+        return ids
 
-        resp = cast(AgentResponse, next(super().invoke(message)))
-        yield {
-            **resp,
-            "document_id": ids
-        }
+    def invoke(self, message: str) -> AgentResponse:
+        # Agentクラスのストリーミングを改修後にストリーミング実装
+        ids = self._add_search_result(message)
+        resp = super().invoke(message)
+        resp.document_id = ids
+        return resp
+
+    async def stream(self, message: str, return_length: int = 5) -> AsyncIterator[StreamingAgentResponse]:
+        ids = self._add_search_result(message)
+        async for resp in super().stream(message, return_length):
+            yield resp
+        self.result.document_id = ids
 
 if __name__ == "__main__":
     from sc_system_ai.logging_config import setup_logging
@@ -68,5 +66,5 @@ if __name__ == "__main__":
     ]
     user_info = User(name=user_name, major=user_major)
     user_info.conversations.add_conversations_list(history)
-    agent = SearchSchoolDataAgent(user_info=user_info, is_streaming=False)
-    print(next(agent.invoke("京都テックについて教えて")))
+    agent = SearchSchoolDataAgent(user_info=user_info)
+    print(agent.invoke("京都テックについて教えて"))

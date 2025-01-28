@@ -6,12 +6,14 @@ from sc_system_ai.template.ai_settings import llm
 from sc_system_ai.template.user_prompts import User
 
 main_agent_tools = [magic_function]
-main_agent_info = "あなたの役割はメインのエージェントです。"
+main_agent_info = """あなたの役割はユーザーと雑談を行うことです。
+ユーザーが楽しめるような会話になるようにしてください。
+"""
 
 # agentクラスの作成
 
 
-class MainAgent(Agent):
+class SmallTalkAgent(Agent):
     def __init__(
             self,
             llm: AzureChatOpenAI = llm,
@@ -39,9 +41,9 @@ if __name__ == "__main__":
     user_info = User(name=user_name, major=user_major)
     user_info.conversations.add_conversations_list(history)
 
-    main_agent = MainAgent(user_info=user_info)
-    main_agent.display_agent_info()
+    agent = SmallTalkAgent(user_info=user_info)
+    agent.display_agent_info()
     # print(main_agent.get_agent_prompt())
-    main_agent.display_agent_prompt()
-    print(main_agent.invoke("magic function に３をいれて"))
+    agent.display_agent_prompt()
+    print(agent.invoke("magic function に３をいれて"))
 

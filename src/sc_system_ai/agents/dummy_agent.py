@@ -1,4 +1,5 @@
 # ダミーのエージェント
+from typing import cast
 
 from langchain_openai import AzureChatOpenAI
 
@@ -49,14 +50,10 @@ class DummyAgent(Agent):
             self,
             llm: AzureChatOpenAI = llm,
             user_info: User | None = None,
-            is_streaming: bool = True,
-            return_length: int = 5
     ):
         super().__init__(
             llm=llm,
             user_info=user_info if user_info is not None else User(),
-            is_streaming=is_streaming,
-            return_length=return_length
         )
         self.assistant_info = dummy_agent_info
         super().set_assistant_info(self.assistant_info)
@@ -96,9 +93,9 @@ if __name__ == "__main__":
             print(output)
         resp = dummy_agent.get_response()
 
-        if type(resp) is dict:
+        if resp.error is not None:
             new_conversation = [
                 ("human", user),
-                ("ai", resp["output"])
+                ("ai", cast(str, resp.output))
             ]
             user_info.conversations.add_conversations_list(new_conversation)
