@@ -1,4 +1,6 @@
+import asyncio
 import logging
+from queue import Queue
 from typing import cast
 
 from langchain_core.tools import BaseTool
@@ -53,6 +55,10 @@ class CallingAgent(BaseTool):
     # AgentResponseを保持する変数
     response: AgentResponse | None = None
 
+    # ストリーミングのセットアップ
+    queue: Queue = Queue()
+    is_streaming: bool = False
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -65,17 +71,23 @@ class CallingAgent(BaseTool):
         # エージェントの呼び出し
         try:
             agent = self.agent(user_info=self.user_info)
+            agent.queue = self.queue
         except Exception as e:
             logger.error(f"エージェントの呼び出しに失敗しました: {e}")
             raise e
         else:
             logger.debug(f"エージェントの呼び出しに成功しました: {self.agent}")
 
-        resp = agent.invoke(user_input)
-        self.response = resp
-        if resp.error is not None:
-            return resp.error
+        if self.is_streaming:
+            asyncio.run(agent.stream_on_tool(user_input))
+            resp = agent.get_response()
+        else:
+            resp = agent.invoke(user_input)
+            self.response = resp
+            if resp.error is not None:
+                return resp.error
         return cast(str, resp.output)
+
 
     def set_user_info(self, user_info: User) -> None:
         """ユーザー情報の設定
@@ -105,6 +117,16 @@ class CallingAgent(BaseTool):
         self.name = name
         self.description = description
         self.agent = agent
+
+    def setup_streaming(self, queue: Queue) -> None:
+        """ストリーミングのセットアップ"""
+        self.is_streaming = True
+        self.queue = queue
+
+    def cancel_streaming(self) -> None:
+        """ストリーミングのキャンセル"""
+        self.is_streaming = False
+        self.queue = Queue()
 
 
 calling_agent = CallingAgent()
