@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from typing import cast
 
 from langchain_openai import AzureChatOpenAI
@@ -10,7 +11,7 @@ from sc_system_ai.agents.tools.calling_search_school_data_agent import (
 )
 from sc_system_ai.agents.tools.calling_small_talk_agent import calling_small_talk_agent
 from sc_system_ai.agents.tools.classify_role import classify_role
-from sc_system_ai.template.agent import Agent, AgentResponse
+from sc_system_ai.template.agent import Agent, AgentResponse, StreamingAgentResponse
 from sc_system_ai.template.ai_settings import llm
 from sc_system_ai.template.calling_agent import CallingAgent
 from sc_system_ai.template.user_prompts import User
@@ -27,8 +28,6 @@ classify_agent_info = """あなたの役割は適切なエージェントを選�
 あなたがユーザーと会話を行ってはいけません。
 ユーザーの入力、会話の流れから適切なエージェントを選択してください。
 引き継いだエージェントが処理を完了するまで、そのエージェントがユーザーと会話を続けるようにしてください。
-
-適切なエージェントの選択、呼び出しができなかった場合は、そのままユーザーとの会話を続けてください。
 """
 
 # agentクラスの作成
@@ -57,6 +56,9 @@ class ClassifyAgent(Agent):
 
     def invoke(self, message: str) -> AgentResponse:
         # toolの出力がAgentReaponseで返って来るので整形
+        for tool in self.tool.tools:
+            if isinstance(tool, CallingAgent):
+                tool.cancel_streaming()
         resp = super().invoke(message)
         resp.document_id = self._doc_id_checker()
         return resp
@@ -70,6 +72,13 @@ class ClassifyAgent(Agent):
                 if tool.document_id is not None:
                     return tool.document_id
         return None
+
+    async def stream(self, message: str, return_length: int = 5) -> AsyncIterator[StreamingAgentResponse]:
+        for tool in self.tool.tools:
+            if isinstance(tool, CallingAgent):
+                tool.setup_streaming(self.queue)
+        async for output in super().stream(message, return_length):
+            yield output
 
 
 if __name__ == "__main__":
