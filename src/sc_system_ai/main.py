@@ -297,7 +297,7 @@ if __name__ == "__main__":
 
     # ストリーミング呼び出し
     async def stream() -> None:
-        async for r in chat.stream(message=message, command="dummy"):
+        async for r in chat.stream(message="京都テックについて教えて"):
             print(r)
     asyncio.run(stream())
 
