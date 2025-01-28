@@ -267,6 +267,31 @@ class Agent:
             logger.error(f"エージェントの実行に失敗しました。エラー内容: {e}")
             self.result = AgentResponse(error=f"エージェントの実行に失敗しました。エラー内容: {e}")
 
+    async def stream_on_tool(self, message: str) -> None:
+        """ツール上でストリーミングでエージェントを実行する関数"""
+        self.handler.queue = self.queue
+        self.setup_streaming()
+        agent = create_tool_calling_agent(
+            llm=self.llm,
+            tools=self.tool.tools,
+            prompt=self.prompt_template.full_prompt
+        )
+        agent_executor = AgentExecutor(
+            agent=agent,
+            tools=self.tool.tools,
+            callbacks= [self.handler],
+        )
+        resp = await agent_executor.ainvoke({
+            "chat_history": self.user_info.conversations.format_conversation(),
+            "messages": message,
+        })
+        self.result = AgentResponse(
+            chat_history=resp.get("chat_history"),
+            messages=resp.get("messages"),
+            output=resp.get("output"),
+        )
+
+
     def get_response(self) -> AgentResponse:
         """エージェントのレスポンスを取得する関数"""
         try:
