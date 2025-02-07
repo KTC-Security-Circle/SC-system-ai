@@ -14,8 +14,9 @@ from sc_system_ai.template.user_prompts import User
 
 search_school_data_agent_info = """あなたの役割は学校の情報をもとにユーザーの質問に回答することです。
 以下に学校の情報について示します。
+学校の情報に記載されていない情報をユーザーに提供してはいけません。
 
-## 学校の情報
+### 学校の情報
 """
 
 # agentクラスの作成
