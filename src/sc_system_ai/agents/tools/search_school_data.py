@@ -7,6 +7,7 @@ from langchain_core.documents import Document
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
+from sc_system_ai.template.ai_settings import llm
 from sc_system_ai.template.azure_cosmos import CosmosDBManager
 
 load_dotenv()
@@ -15,6 +16,24 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+
+class Output(BaseModel):
+    word: str = Field(description="検索ワード")
+
+def genarate_search_word(message: str) -> str:
+    """メッセージから検索ワードを生成する関数"""
+    prompt = """# Task
+条件に従い以下に与えるメッセージから検索ワードを生成してください。
+
+## 条件
+- 検索ワードは日本語であること
+- ユーザーが知りたい事に、直結するワードであること
+- 複数を半角スペースで区切っても構いません
+
+## メッセージ"""
+    model = llm.with_structured_output(Output)
+    result = model.invoke(prompt + "\n" + message)
+    return result.word
 
 def search_school_database_aisearch(search_word: str) -> list[Document]:
     """学校に関する情報を検索する関数(過去のデータベースを参照)"""
