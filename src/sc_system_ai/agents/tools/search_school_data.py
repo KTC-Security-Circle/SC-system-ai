@@ -33,7 +33,11 @@ def genarate_search_word(message: str) -> str:
 ## メッセージ"""
     model = llm.with_structured_output(Output)
     result = model.invoke(prompt + "\n" + message)
-    return result.word
+    if isinstance(result, Output):
+        return result.word
+    else:
+        logger.error("検索ワードの生成に失敗しました")
+        return message
 
 def search_school_database_aisearch(search_word: str) -> list[Document]:
     """学校に関する情報を検索する関数(過去のデータベースを参照)"""
