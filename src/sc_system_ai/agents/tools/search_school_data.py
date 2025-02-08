@@ -34,6 +34,7 @@ def genarate_search_word(message: str) -> str:
     model = llm.with_structured_output(Output)
     result = model.invoke(prompt + "\n" + message)
     if isinstance(result, Output):
+        logger.info(f"検索ワードの生成に成功しました: {result.word}")
         return result.word
     else:
         logger.error("検索ワードの生成に失敗しました")
