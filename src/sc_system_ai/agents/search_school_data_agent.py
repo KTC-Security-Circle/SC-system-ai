@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator
 from langchain_openai import AzureChatOpenAI
 
 # from sc_system_ai.agents.tools import magic_function
-from sc_system_ai.agents.tools.search_school_data import search_school_database_cosmos
+from sc_system_ai.agents.tools.search_school_data import genarate_search_word, search_school_database_cosmos
 from sc_system_ai.template.agent import Agent, AgentResponse, StreamingAgentResponse
 from sc_system_ai.template.ai_settings import llm
 from sc_system_ai.template.user_prompts import User
@@ -14,8 +14,10 @@ from sc_system_ai.template.user_prompts import User
 
 search_school_data_agent_info = """あなたの役割は学校の情報をもとにユーザーの質問に回答することです。
 以下に学校の情報について示します。
+学校の情報に記載されていない情報をユーザーに提供してはいけません。
+学校の情報を全て使用する必要はありません。ユーザーの質問に合わせて適切な情報を提供してください。
 
-## 学校の情報
+### 学校の情報
 """
 
 # agentクラスの作成
@@ -33,7 +35,8 @@ class SearchSchoolDataAgent(Agent):
         self.assistant_info = search_school_data_agent_info
 
     def _add_search_result(self, message: str) -> list[str]:
-        search = search_school_database_cosmos(message)
+        word = genarate_search_word(message)
+        search = search_school_database_cosmos(word)
         ids = []
         for doc in search:
             self.assistant_info += f"### {doc.metadata['title']}\n" + doc.page_content + "\n"

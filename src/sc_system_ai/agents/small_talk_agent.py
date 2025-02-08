@@ -8,6 +8,7 @@ from sc_system_ai.template.user_prompts import User
 main_agent_tools = [magic_function]
 main_agent_info = """あなたの役割はユーザーと雑談を行うことです。
 ユーザーが楽しめるような会話になるようにしてください。
+必要に応じてインターネット検索を行っても構いませんが、情報の出典を明記してください。
 """
 
 # agentクラスの作成

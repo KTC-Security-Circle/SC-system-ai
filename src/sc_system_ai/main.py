@@ -268,7 +268,7 @@ async def streaming_chat() -> None:
 
 
 if __name__ == "__main__":
-    import asyncio
+    # import asyncio
 
     from sc_system_ai.logging_config import setup_logging
     setup_logging()
@@ -284,20 +284,20 @@ if __name__ == "__main__":
             ("ai", "本日はどのようなご用件でしょうか？")
         ],
     )
-    message = "私の名前と専攻は何ですか？"
+    message = "AI・IT・ロボットワールドにある専攻について教えて"
 
     # try:
     #     resp = chat.agent.get_response()
     # except Exception:
     #     pass
 
-    # # 通常呼び出し
-    # resp = chat.invoke(message=message, command="dummy")
-    # print(resp)
+    # 通常呼び出し
+    resp = chat.invoke(message=message)
+    print(resp)
 
-    # ストリーミング呼び出し
-    async def stream() -> None:
-        async for r in chat.stream(message="京都テックについて教えて"):
-            print(r)
-    asyncio.run(stream())
+    # # ストリーミング呼び出し
+    # async def stream() -> None:
+    #     async for r in chat.stream(message="京都テックについて教えて"):
+    #         print(r)
+    # asyncio.run(stream())
 
