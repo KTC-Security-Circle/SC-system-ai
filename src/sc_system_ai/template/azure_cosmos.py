@@ -122,10 +122,13 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         text: str,
         text_type: Literal["markdown", "plain"] = "markdown",
         title: str | None = None,
+        source_id: int | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> list[str]:
         """データベースに新しいdocumentを作成する関数"""
         logger.info("新しいdocumentを作成します")
+        if metadata is not None and source_id is not None:
+            metadata.setdefault("source_id", source_id)
         texts, metadatas = self._division_document(
             md_formatter(text, title, metadata) if text_type == "markdown"
             else text_formatter(text, title=title, metadata=metadata)
@@ -150,6 +153,7 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         text: str | None = None,
         text_type: Literal["markdown", "plain"] | None = None,
         title: str | None = None,
+        source_id: int | None = None,
         metadata: dict[str, Any] | None = None,
         del_metadata: list[str] | None = None,
         is_patch: bool = False,
@@ -171,7 +175,7 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             if text_type is None:
                 raise TypeError("textを更新する際はtext_typeを指定してください。")
             result = self._text_updater(
-                id, text, text_type, metadata, item["metadata"].get("group_id", None)
+                id, text, text_type, source_id, metadata, item["metadata"].get("group_id", None)
             )
 
         if any([title, metadata, del_metadata]):
@@ -266,6 +270,7 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         id: str,
         text: str,
         text_type: Literal["markdown", "plain"],
+        source_id: int | None = None,
         metadata: dict[str, Any] | None = None,
         group_id: str | None = None,
     ) -> list[str]:
@@ -278,7 +283,7 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
             for d in data:
                 self.delete_document_by_id(d["id"])
 
-        ids = self.create_document(text, text_type, metadata=metadata)
+        ids = self.create_document(text, text_type, metadata=metadata, source_id=source_id)
         patch = [{
             "op": "replace",
             "path": "/metadata/created_at",
