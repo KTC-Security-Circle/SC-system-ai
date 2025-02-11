@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class CallingSearchSchoolDataAgent(CallingAgent):
     # tool側でidを保持する
-    document_id: list[str] | None = None
+    source_id: set[str] = set()
 
     def __init__(self) -> None:
         super().__init__()
@@ -23,7 +23,9 @@ class CallingSearchSchoolDataAgent(CallingAgent):
 
     def _run(self, user_input: str) -> str:
         resp = super()._run(user_input)
-        self.document_id = self.response.document_id if self.response is not None else None
+        if self.response.document_id is not None:
+            for _id in self.response.document_id:
+                self.source_id.add(_id)
         return resp
 
 calling_search_school_data_agent = CallingSearchSchoolDataAgent()
