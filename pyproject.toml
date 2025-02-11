@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sc-system-ai"
-version = "0.9.1"
+version = "0.10.0"
 description = "Package for handling LLM in sc-system."
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
