@@ -127,11 +127,12 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
     ) -> list[str]:
         """データベースに新しいdocumentを作成する関数"""
         logger.info("新しいdocumentを作成します")
-        if metadata is not None and source_id is not None:
-            metadata.setdefault("source_id", source_id)
+        m = metadata if metadata is not None else {}
+        if source_id is not None:
+            m.setdefault("source_id", source_id)
         texts, metadatas = self._division_document(
-            md_formatter(text, title, metadata) if text_type == "markdown"
-            else text_formatter(text, title=title, metadata=metadata)
+            md_formatter(text, title, m) if text_type == "markdown"
+            else text_formatter(text, title=title, metadata=m)
         )
         ids = self._insert_texts(texts, metadatas)
         return ids
@@ -349,7 +350,7 @@ if __name__ == "__main__":
 エージェントが回答の生成を終えてからレスポンスを受け取ることも可能です。"""
 #     _id = "989af836-cf9b-44c7-93d2-deff7aeae51f"
 #     print(cosmos_manager.update_document(_id, text))
-
+    cosmos_manager.create_document(text, text_type="plain", title="ストリーミングレスポンス", source_id=1)
 
     # cosmos_manager.update_document(
     #     id="98941def-479c-4292-ad68-1d6dd9f4800e",
