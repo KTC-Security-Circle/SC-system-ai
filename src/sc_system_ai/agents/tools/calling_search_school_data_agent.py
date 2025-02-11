@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class CallingSearchSchoolDataAgent(CallingAgent):
     # tool側でidを保持する
-    source_id: set[str] = set()
+    source_id: set[str | int] = set()
 
     def __init__(self) -> None:
         super().__init__()
