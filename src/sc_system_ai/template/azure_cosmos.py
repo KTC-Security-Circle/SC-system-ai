@@ -149,33 +149,38 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
 
     def update_document(
         self,
-        id: str,
+        source_id: int | None = None,
         text: str | None = None,
         text_type: Literal["markdown", "plain"] | None = None,
         title: str | None = None,
-        source_id: int | None = None,
         metadata: dict[str, Any] | None = None,
         del_metadata: list[str] | None = None,
         is_patch: bool = False,
     ) -> list[str]:
         """データベースのdocumentを更新する関数"""
         logger.info("documentを更新します")
-        result = [id]
-        item = self.read_item(values=["text", "metadata"], condition={"id": id})[0]
+        # source_idを指定してdocumentを取得
+        update_docs = self.read_item(values=["id", "metadata"], condition={"metadata.source_id": source_id})
+        _id = cast(str, update_docs[0]["id"])
+        result = [_id]
+        for doc in update_docs:
+            if doc["id"] not in result:
+                result.append(cast(str, doc["id"]))
+        item = update_docs[0]
 
         if title is not None:
-            self._title_updater(id, title, item["metadata"].get("group_id", None))
+            self._title_updater(_id, title, item["metadata"].get("group_id", None))
 
         if metadata is not None:
             self._metadata_updater(
-                id, metadata, del_metadata, None if is_patch else item["metadata"].get("group_id", None)
+                _id, metadata, del_metadata, None if is_patch else item["metadata"].get("group_id", None)
             )
 
         if text is not None:
             if text_type is None:
                 raise TypeError("textを更新する際はtext_typeを指定してください。")
             result = self._text_updater(
-                id, text, text_type, source_id, metadata, item["metadata"].get("group_id", None)
+                _id, text, text_type, source_id, metadata, item["metadata"].get("group_id", None)
             )
 
         if any([title, metadata, del_metadata]):
@@ -185,9 +190,9 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
                 "path": "/metadata/updated_at",
                 "value": date
             }]
-            for _id in result:
+            for doc_id in result:
                 self._container.patch_item(
-                    item=_id, partition_key=_id, patch_operations=patch
+                    item=doc_id, partition_key=doc_id, patch_operations=patch
                 )
 
         return result
@@ -346,13 +351,13 @@ if __name__ == "__main__":
 #     print(cosmos_manager.update_document(_id, text))
 
 
-    cosmos_manager.update_document(
-        id="98941def-479c-4292-ad68-1d6dd9f4800e",
-        text=text,
-        text_type="markdown",
-    )
-    cosmos_manager.update_document(
-        id="98941def-479c-4292-ad68-1d6dd9f4800e",
-        text=text,
-        text_type="markdown",
-    )
+    # cosmos_manager.update_document(
+    #     id="98941def-479c-4292-ad68-1d6dd9f4800e",
+    #     text=text,
+    #     text_type="markdown",
+    # )
+    # cosmos_manager.update_document(
+    #     id="98941def-479c-4292-ad68-1d6dd9f4800e",
+    #     text=text,
+    #     text_type="markdown",
+    # )
