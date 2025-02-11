@@ -81,6 +81,7 @@ class CallingAgent(BaseTool):
         if self.is_streaming:
             asyncio.run(agent.stream_on_tool(user_input))
             resp = agent.get_response()
+            self.response = resp
         else:
             resp = agent.invoke(user_input)
             self.response = resp
