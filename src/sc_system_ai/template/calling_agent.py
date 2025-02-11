@@ -53,7 +53,7 @@ class CallingAgent(BaseTool):
     user_info: User = Field(description="ユーザー情報", default=User())
     agent: type[Agent] = Agent
     # AgentResponseを保持する変数
-    response: AgentResponse | None = None
+    response: AgentResponse = AgentResponse()
 
     # ストリーミングのセットアップ
     queue: Queue = Queue()
