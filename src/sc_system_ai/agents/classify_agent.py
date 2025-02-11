@@ -66,12 +66,12 @@ class ClassifyAgent(Agent):
 
     def _doc_id_checker(self) -> list[str] | None:
         """
-        ドキュメントIDが存在するか確認する
+        ソースIDが存在するか確認する
         """
         for tool in self.tool.tools:
             if isinstance(tool, CallingSearchSchoolDataAgent):
-                if tool.document_id is not None:
-                    return tool.document_id
+                if tool.source_id:
+                    return list(tool.source_id)
         return None
 
     async def stream(self, message: str, return_length: int = 5) -> AsyncIterator[StreamingAgentResponse]:
