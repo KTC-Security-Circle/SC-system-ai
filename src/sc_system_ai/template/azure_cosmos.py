@@ -327,6 +327,12 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         result = item[0]["text"]
         return cast(str, result)
 
+    def delete_document_by_source_id(self, source_id: int) -> None:
+        """source_idを指定してdocumentを削除する関数"""
+        logger.info(f"{source_id=}のdocumentを削除します")
+        data = self.read_item(values=["id"], condition={"metadata.source_id": source_id})
+        for d in data:
+            self.delete_document_by_id(d["id"])
 
 if __name__ == "__main__":
     from sc_system_ai.logging_config import setup_logging
@@ -350,7 +356,7 @@ if __name__ == "__main__":
 エージェントが回答の生成を終えてからレスポンスを受け取ることも可能です。"""
 #     _id = "989af836-cf9b-44c7-93d2-deff7aeae51f"
 #     print(cosmos_manager.update_document(_id, text))
-    cosmos_manager.create_document(text, text_type="plain", title="ストリーミングレスポンス", source_id=1)
+    cosmos_manager.delete_document_by_source_id(1)
 
     # cosmos_manager.update_document(
     #     id="98941def-479c-4292-ad68-1d6dd9f4800e",
