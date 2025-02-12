@@ -73,7 +73,7 @@ AGENT = Literal["classify", "dummy", "search_school_data", "small_talk"]
 class Response(TypedDict):
     output: str | None
     error: str | None
-    document_id: list[str | int] | None
+    document_id: list[int] | None
 
 class StreamResponse(TypedDict):
     output: str | None

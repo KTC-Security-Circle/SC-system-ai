@@ -34,7 +34,7 @@ class SearchSchoolDataAgent(Agent):
         )
         self.assistant_info = search_school_data_agent_info
 
-    def _add_search_result(self, message: str) -> list[str | int]:
+    def _add_search_result(self, message: str) -> list[int]:
         word = genarate_search_word(message)
         search = search_school_database_cosmos(word)
         ids = []

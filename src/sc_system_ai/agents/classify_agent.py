@@ -64,7 +64,7 @@ class ClassifyAgent(Agent):
         resp.document_id = self._doc_id_checker()
         return resp
 
-    def _doc_id_checker(self) -> list[str | int] | None:
+    def _doc_id_checker(self) -> list[int] | None:
         """
         ソースIDが存在するか確認する
         """
