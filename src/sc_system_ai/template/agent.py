@@ -102,7 +102,7 @@ class AgentResponse(BaseAgentResponse):
     """Agentのレスポンスの型"""
     chat_history: list[HumanMessage | AIMessage] | None = None
     messages: str | None = None
-    document_id: list[str | int] | None = None
+    document_id: list[int] | None = None
 
 
 class StreamingAgentResponse(BaseAgentResponse):

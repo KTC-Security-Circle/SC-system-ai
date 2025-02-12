@@ -34,7 +34,7 @@ class SearchSchoolDataAgent(Agent):
         )
         self.assistant_info = search_school_data_agent_info
 
-    def _add_search_result(self, message: str) -> list[str | int]:
+    def _add_search_result(self, message: str) -> list[int]:
         word = genarate_search_word(message)
         search = search_school_database_cosmos(word)
         ids = []
@@ -42,8 +42,6 @@ class SearchSchoolDataAgent(Agent):
             self.assistant_info += f"### {doc.metadata['title']}\n" + doc.page_content + "\n"
             if "source_id" in doc.metadata:
                 ids.append(doc.metadata["source_id"])
-            else:
-                ids.append(doc.metadata["id"])
         super().set_assistant_info(self.assistant_info)
         return ids
 
