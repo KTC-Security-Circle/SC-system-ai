@@ -42,8 +42,6 @@ class SearchSchoolDataAgent(Agent):
             self.assistant_info += f"### {doc.metadata['title']}\n" + doc.page_content + "\n"
             if "source_id" in doc.metadata:
                 ids.append(doc.metadata["source_id"])
-            else:
-                ids.append(doc.metadata["id"])
         super().set_assistant_info(self.assistant_info)
         return ids
 
