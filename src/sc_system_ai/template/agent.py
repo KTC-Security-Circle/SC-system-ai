@@ -17,7 +17,7 @@ from langchain.tools import BaseTool
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_openai import AzureChatOpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from sc_system_ai.agents.tools import magic_function, search_duckduckgo
 from sc_system_ai.template.ai_settings import llm
@@ -97,6 +97,10 @@ class BaseAgentResponse(BaseModel):
     """Agentのレスポンスの型"""
     output: str | None = None
     error: str | None = None
+
+    model_config = ConfigDict(
+        validate_assignment=True
+    )
 
 class AgentResponse(BaseAgentResponse):
     """Agentのレスポンスの型"""
