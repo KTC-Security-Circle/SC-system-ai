@@ -28,7 +28,6 @@ def markdown_splitter(
     ]
     splitter = MarkdownHeaderTextSplitter(
         headers_to_split_on,
-        return_each_line=True,
     )
     return splitter.split_text(text)
 
