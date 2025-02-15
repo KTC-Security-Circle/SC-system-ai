@@ -1,6 +1,7 @@
 import logging
 import os
 from datetime import datetime
+from time import sleep
 from typing import Any, Literal, cast
 
 from azure.cosmos import CosmosClient, PartitionKey
@@ -130,12 +131,19 @@ class CosmosDBManager(AzureCosmosDBNoSqlVectorSearch):
         m = metadata if metadata is not None else {}
         if source_id is not None:
             m.setdefault("source_id", source_id)
-        texts, metadatas = self._division_document(
-            md_formatter(text, title, m) if text_type == "markdown"
-            else text_formatter(text, title=title, metadata=m)
-        )
-        ids = self._insert_texts(texts, metadatas)
+        docs = md_formatter(text, title, m) if text_type == "markdown" \
+                else text_formatter(text, title=title, metadata=m)
+
+        ids: list[str] = []
+        for doc in self._slice_docs(docs):
+            texts, metadatas = self._division_document(doc)
+            ids += self._insert_texts(texts, metadatas)
+            sleep(0.01)
         return ids
+
+    def _slice_docs(self, docs: list[Document], chunk_size: int = 10) -> list[list[Document]]:
+        """documentをスライスする関数"""
+        return [docs[i:i + chunk_size] for i in range(0, len(docs), chunk_size)]
 
     def _division_document(
         self,
@@ -356,7 +364,7 @@ if __name__ == "__main__":
 エージェントが回答の生成を終えてからレスポンスを受け取ることも可能です。"""
 #     _id = "989af836-cf9b-44c7-93d2-deff7aeae51f"
 #     print(cosmos_manager.update_document(_id, text))
-    cosmos_manager.delete_document_by_source_id(1)
+    # cosmos_manager.delete_document_by_source_id(1)
 
     # cosmos_manager.update_document(
     #     id="98941def-479c-4292-ad68-1d6dd9f4800e",
@@ -368,3 +376,6 @@ if __name__ == "__main__":
     #     text=text,
     #     text_type="markdown",
     # )
+    with open("page.txt", encoding="utf-8") as f:
+        text = f.read()
+    cosmos_manager.create_document(text, text_type="markdown")
