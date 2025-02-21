@@ -12,7 +12,7 @@ class CallingSelfIntroduceAgent(CallingAgent):
         super().__init__()
         self.set_tool_info(
             name="calling_self_introduce_agent",
-            description="自己紹介を行うエージェントを呼び出す",
+            description="自己紹介を行うエージェントを呼び出す。どのようなサービスを提供できるかをユーザーに伝える。",
             agent=SelfIntroduceAgent,
         )
 
