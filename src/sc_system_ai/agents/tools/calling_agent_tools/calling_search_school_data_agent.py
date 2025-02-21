@@ -17,7 +17,7 @@ class CallingSearchSchoolDataAgent(CallingAgent):
         super().__init__()
         self.set_tool_info(
             name="calling_search_school_data_agent",
-            description="学校情報を検索するエージェントを呼び出すツール",
+            description="学校情報を検索するエージェントを呼び出す。学校情報に関する質問に回答する。",
             agent=SearchSchoolDataAgent
         )
 

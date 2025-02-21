@@ -18,15 +18,10 @@ SIMILARITY_THRESHOLD = 0.5
 
 class Output(BaseModel):
     word: Literal[
-        # role
-        "申請",
-        # role_type
-        "欠課届",
-        "遅刻届",
-        "遅延届",
-        "早退届",
         "公欠届",
-        "学校情報検索"
+        "学校情報検索",
+        "雑談",
+        "自己紹介",
     ]
     similarity_score: float = Field(ge=0.0, le=1.0)
 
@@ -84,15 +79,17 @@ def check_same_word(
 
 dammy_role_data = {
     "申請": [
-        "欠課届",
-        "遅刻届",
-        "遅延届",
-        "早退届",
         "公欠届",
     ],
     "学校情報検索": [
         "学校情報の検索"
-    ]
+    ],
+    "雑談": [
+        "雑談"
+    ],
+    "自己紹介": [
+        "自己紹介"
+    ],
 }
 
 class ClassifyRoleInput(BaseModel):

@@ -14,7 +14,7 @@ class CallingDummyAgent(CallingAgent):
         super().__init__()
         self.set_tool_info(
             name="calling_dummy_agent",
-            description="ダミーエージェントを呼び出すツール",
+            description="ダミーエージェントを呼び出す。公欠届の提出を手伝う。",
             agent=DummyAgent
         )
 
